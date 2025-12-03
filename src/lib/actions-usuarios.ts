@@ -12,6 +12,13 @@ const FormSchema = z.object({
   email: z.string().email('Email inválido.'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres.'),
   rol: z.string().min(1, 'El rol es obligatorio.'),
+  permisoSocios: z.string().optional(),
+  permisoPlanes: z.string().optional(),
+  permisoSuscripciones: z.string().optional(),
+  permisoAsistencias: z.string().optional(),
+  permisoReportes: z.string().optional(),
+  permisoConfiguracion: z.string().optional(),
+  permisoUsuarios: z.string().optional(),
 });
 
 const CreateUsuario = FormSchema.omit({ id: true });
@@ -25,6 +32,13 @@ export async function createUsuario(prevState: any, formData: FormData) {
     email: formData.get('email'),
     password: formData.get('password'),
     rol: formData.get('rol'),
+    permisoSocios: formData.get('permisoSocios'),
+    permisoPlanes: formData.get('permisoPlanes'),
+    permisoSuscripciones: formData.get('permisoSuscripciones'),
+    permisoAsistencias: formData.get('permisoAsistencias'),
+    permisoReportes: formData.get('permisoReportes'),
+    permisoConfiguracion: formData.get('permisoConfiguracion'),
+    permisoUsuarios: formData.get('permisoUsuarios'),
   });
 
   if (!validatedFields.success) {
@@ -34,7 +48,7 @@ export async function createUsuario(prevState: any, formData: FormData) {
     };
   }
 
-  const { nombre, email, password, rol } = validatedFields.data;
+  const { nombre, email, password, rol, permisoSocios, permisoPlanes, permisoSuscripciones, permisoAsistencias, permisoReportes, permisoConfiguracion, permisoUsuarios } = validatedFields.data;
   const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
@@ -44,6 +58,13 @@ export async function createUsuario(prevState: any, formData: FormData) {
         email,
         password: hashedPassword,
         rol,
+        permisoSocios: permisoSocios === 'on',
+        permisoPlanes: permisoPlanes === 'on',
+        permisoSuscripciones: permisoSuscripciones === 'on',
+        permisoAsistencias: permisoAsistencias === 'on',
+        permisoReportes: permisoReportes === 'on',
+        permisoConfiguracion: permisoConfiguracion === 'on',
+        permisoUsuarios: permisoUsuarios === 'on',
       },
     });
   } catch (error) {
@@ -64,6 +85,13 @@ export async function updateUsuario(id: string, prevState: any, formData: FormDa
     nombre: formData.get('nombre'),
     email: formData.get('email'),
     rol: formData.get('rol'),
+    permisoSocios: formData.get('permisoSocios'),
+    permisoPlanes: formData.get('permisoPlanes'),
+    permisoSuscripciones: formData.get('permisoSuscripciones'),
+    permisoAsistencias: formData.get('permisoAsistencias'),
+    permisoReportes: formData.get('permisoReportes'),
+    permisoConfiguracion: formData.get('permisoConfiguracion'),
+    permisoUsuarios: formData.get('permisoUsuarios'),
     ...(passwordRaw ? { password: passwordRaw } : {}),
   };
 
@@ -81,12 +109,19 @@ export async function updateUsuario(id: string, prevState: any, formData: FormDa
     };
   }
 
-  const { nombre, email, rol, password } = validatedFields.data;
+  const { nombre, email, rol, password, permisoSocios, permisoPlanes, permisoSuscripciones, permisoAsistencias, permisoReportes, permisoConfiguracion, permisoUsuarios } = validatedFields.data;
 
   const dataToUpdate: any = {
     nombre,
     email,
     rol,
+    permisoSocios: permisoSocios === 'on',
+    permisoPlanes: permisoPlanes === 'on',
+    permisoSuscripciones: permisoSuscripciones === 'on',
+    permisoAsistencias: permisoAsistencias === 'on',
+    permisoReportes: permisoReportes === 'on',
+    permisoConfiguracion: permisoConfiguracion === 'on',
+    permisoUsuarios: permisoUsuarios === 'on',
   };
 
   if (password) {

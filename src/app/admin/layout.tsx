@@ -1,6 +1,7 @@
 import { getConfiguracion } from '@/lib/data';
 import { auth, signOut } from '@/auth';
 import Link from 'next/link';
+import prisma from '@/lib/prisma';
 
 export default async function AdminLayout({
   children,
@@ -9,6 +10,13 @@ export default async function AdminLayout({
 }) {
   const config = await getConfiguracion();
   const session = await auth();
+
+  let userPermissions = null;
+  if (session?.user?.email) {
+    userPermissions = await prisma.usuario.findUnique({
+        where: { email: session.user.email },
+    });
+  }
 
   // Valores por defecto si no hay configuración
   const primaryColor = config?.colorPrimario || '#2563eb'; // blue-600
@@ -38,7 +46,7 @@ export default async function AdminLayout({
           </Link>
           
           <div className="flex grow flex-row justify-between space-x-2 md:flex-col md:space-x-0 md:space-y-2">
-            <NavLinks />
+            <NavLinks permissions={userPermissions} />
             <div className="hidden h-auto w-full grow rounded-md bg-white/10 md:block"></div>
             
             <form
@@ -70,22 +78,22 @@ export default async function AdminLayout({
   );
 }
 
-function NavLinks() {
+function NavLinks({ permissions }: { permissions: any }) {
   const links = [
-    { name: 'Dashboard', href: '/admin' },
-    { name: 'Usuarios', href: '/admin/usuarios' },
-    { name: 'Socios', href: '/admin/socios' },
-    { name: 'Planes', href: '/admin/planes' },
-    { name: 'Suscripciones', href: '/admin/suscripciones' },
-    { name: 'Asistencias', href: '/admin/asistencias' },
-    { name: 'Transacciones', href: '/admin/transacciones' },
-    { name: 'Reportes', href: '/admin/reportes' },
-    { name: 'Configuración', href: '/admin/configuracion' },
+    { name: 'Dashboard', href: '/admin', show: true },
+    { name: 'Usuarios', href: '/admin/usuarios', show: permissions?.permisoUsuarios ?? false },
+    { name: 'Socios', href: '/admin/socios', show: permissions?.permisoSocios ?? true },
+    { name: 'Planes', href: '/admin/planes', show: permissions?.permisoPlanes ?? false },
+    { name: 'Suscripciones', href: '/admin/suscripciones', show: permissions?.permisoSuscripciones ?? true },
+    { name: 'Asistencias', href: '/admin/asistencias', show: permissions?.permisoAsistencias ?? true },
+    { name: 'Transacciones', href: '/admin/transacciones', show: permissions?.permisoSuscripciones ?? true }, // Linked to Suscripciones usually
+    { name: 'Reportes', href: '/admin/reportes', show: permissions?.permisoReportes ?? false },
+    { name: 'Configuración', href: '/admin/configuracion', show: permissions?.permisoConfiguracion ?? false },
   ];
 
   return (
     <>
-      {links.map((link) => {
+      {links.filter(link => link.show).map((link) => {
         return (
           <Link
             key={link.name}

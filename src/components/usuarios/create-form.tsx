@@ -117,6 +117,41 @@ export default function Form() {
           </div>
         </div>
 
+        {/* Permisos de Acceso */}
+        <div className="mb-4 border-t pt-4">
+            <h3 className="mb-3 block text-sm font-medium text-gray-900">Permisos de Acceso</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center">
+                    <input id="permisoSocios" name="permisoSocios" type="checkbox" defaultChecked className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <label htmlFor="permisoSocios" className="ml-2 block text-sm text-gray-900">Socios</label>
+                </div>
+                <div className="flex items-center">
+                    <input id="permisoPlanes" name="permisoPlanes" type="checkbox" className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <label htmlFor="permisoPlanes" className="ml-2 block text-sm text-gray-900">Planes</label>
+                </div>
+                <div className="flex items-center">
+                    <input id="permisoSuscripciones" name="permisoSuscripciones" type="checkbox" defaultChecked className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <label htmlFor="permisoSuscripciones" className="ml-2 block text-sm text-gray-900">Suscripciones</label>
+                </div>
+                <div className="flex items-center">
+                    <input id="permisoAsistencias" name="permisoAsistencias" type="checkbox" defaultChecked className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <label htmlFor="permisoAsistencias" className="ml-2 block text-sm text-gray-900">Asistencias</label>
+                </div>
+                <div className="flex items-center">
+                    <input id="permisoReportes" name="permisoReportes" type="checkbox" className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <label htmlFor="permisoReportes" className="ml-2 block text-sm text-gray-900">Reportes</label>
+                </div>
+                <div className="flex items-center">
+                    <input id="permisoConfiguracion" name="permisoConfiguracion" type="checkbox" className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <label htmlFor="permisoConfiguracion" className="ml-2 block text-sm text-gray-900">Configuración</label>
+                </div>
+                <div className="flex items-center">
+                    <input id="permisoUsuarios" name="permisoUsuarios" type="checkbox" className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <label htmlFor="permisoUsuarios" className="ml-2 block text-sm text-gray-900">Usuarios</label>
+                </div>
+            </div>
+        </div>
+
         <div aria-live="polite" aria-atomic="true">
           {state.message && (
             <p className="mt-2 text-sm text-red-500">{state.message}</p>

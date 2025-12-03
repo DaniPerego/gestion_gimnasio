@@ -24,6 +24,16 @@ model Usuario {
   password  String
   nombre    String
   rol       String   @default("RECEPCIONISTA") // SQLite no soporta enums
+  
+  // Permisos Granulares
+  permisoSocios        Boolean @default(true)
+  permisoPlanes        Boolean @default(false)
+  permisoSuscripciones Boolean @default(true)
+  permisoAsistencias   Boolean @default(true)
+  permisoReportes      Boolean @default(false)
+  permisoConfiguracion Boolean @default(false)
+  permisoUsuarios      Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
