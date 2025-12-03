@@ -12,13 +12,13 @@ const FormSchema = z.object({
   email: z.string().email('Email inválido.'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres.'),
   rol: z.string().min(1, 'El rol es obligatorio.'),
-  permisoSocios: z.string().optional(),
-  permisoPlanes: z.string().optional(),
-  permisoSuscripciones: z.string().optional(),
-  permisoAsistencias: z.string().optional(),
-  permisoReportes: z.string().optional(),
-  permisoConfiguracion: z.string().optional(),
-  permisoUsuarios: z.string().optional(),
+  permisoSocios: z.string().optional().nullable(),
+  permisoPlanes: z.string().optional().nullable(),
+  permisoSuscripciones: z.string().optional().nullable(),
+  permisoAsistencias: z.string().optional().nullable(),
+  permisoReportes: z.string().optional().nullable(),
+  permisoConfiguracion: z.string().optional().nullable(),
+  permisoUsuarios: z.string().optional().nullable(),
 });
 
 const CreateUsuario = FormSchema.omit({ id: true });

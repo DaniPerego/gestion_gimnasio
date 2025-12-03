@@ -122,7 +122,7 @@ export default function Form() {
             <h3 className="mb-3 block text-sm font-medium text-gray-900">Permisos de Acceso</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center">
-                    <input id="permisoSocios" name="permisoSocios" type="checkbox" defaultChecked className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <input id="permisoSocios" name="permisoSocios" type="checkbox" className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                     <label htmlFor="permisoSocios" className="ml-2 block text-sm text-gray-900">Socios</label>
                 </div>
                 <div className="flex items-center">
@@ -130,11 +130,11 @@ export default function Form() {
                     <label htmlFor="permisoPlanes" className="ml-2 block text-sm text-gray-900">Planes</label>
                 </div>
                 <div className="flex items-center">
-                    <input id="permisoSuscripciones" name="permisoSuscripciones" type="checkbox" defaultChecked className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <input id="permisoSuscripciones" name="permisoSuscripciones" type="checkbox" className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                     <label htmlFor="permisoSuscripciones" className="ml-2 block text-sm text-gray-900">Suscripciones</label>
                 </div>
                 <div className="flex items-center">
-                    <input id="permisoAsistencias" name="permisoAsistencias" type="checkbox" defaultChecked className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <input id="permisoAsistencias" name="permisoAsistencias" type="checkbox" className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                     <label htmlFor="permisoAsistencias" className="ml-2 block text-sm text-gray-900">Asistencias</label>
                 </div>
                 <div className="flex items-center">
