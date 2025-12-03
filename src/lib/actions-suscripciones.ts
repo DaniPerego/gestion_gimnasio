@@ -41,8 +41,21 @@ export async function createSuscripcion(prevState: any, formData: FormData) {
     }
 
     const fechaInicioDate = new Date(fechaInicio);
+    
+    // Lógica de Mes Calendario:
+    // La suscripción termina el último día del mes correspondiente a la duración.
+    // Ejemplo: Inicio 3 Dic, Duración 1 mes -> Fin 31 Dic.
+    // Ejemplo: Inicio 20 Dic, Duración 1 mes -> Fin 31 Dic.
     const fechaFinDate = new Date(fechaInicioDate);
-    fechaFinDate.setMonth(fechaFinDate.getMonth() + plan.duracionMeses);
+    // Sumamos la duración en meses (menos 1 porque el mes actual cuenta)
+    // Si es 1 mes, nos quedamos en el mes actual. Si son 2, vamos al siguiente.
+    fechaFinDate.setMonth(fechaFinDate.getMonth() + plan.duracionMeses - 1);
+    // Establecemos al último día del mes
+    fechaFinDate.setMonth(fechaFinDate.getMonth() + 1);
+    fechaFinDate.setDate(0); // Día 0 del siguiente mes es el último del actual
+    
+    // Ajustar horas para evitar problemas de zona horaria (opcional, pero recomendado setear a final del día)
+    fechaFinDate.setHours(23, 59, 59, 999);
 
     await prisma.suscripcion.create({
       data: {
