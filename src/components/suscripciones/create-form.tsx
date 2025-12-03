@@ -5,7 +5,10 @@ import { useActionState } from 'react';
 import { createSuscripcion } from '@/lib/actions-suscripciones';
 import { Socio, Plan } from '@prisma/client';
 
-export default function Form({ socios, planes }: { socios: Socio[], planes: Plan[] }) {
+// Definir un tipo Plan serializable donde 'precio' es number en lugar de Decimal
+type PlanSerializable = Omit<Plan, 'precio'> & { precio: number };
+
+export default function Form({ socios, planes }: { socios: Socio[], planes: PlanSerializable[] }) {
   const initialState = { message: '', errors: {} };
   const [state, dispatch, isPending] = useActionState(createSuscripcion, initialState);
 

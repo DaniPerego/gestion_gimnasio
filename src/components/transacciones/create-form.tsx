@@ -7,7 +7,7 @@ import { Suscripcion, Socio, Plan } from '@prisma/client';
 
 type SuscripcionConRelaciones = Suscripcion & {
   socio: Socio;
-  plan: Plan;
+  plan: Omit<Plan, 'precio'> & { precio: number };
 };
 
 export default function Form({ suscripciones }: { suscripciones: SuscripcionConRelaciones[] }) {

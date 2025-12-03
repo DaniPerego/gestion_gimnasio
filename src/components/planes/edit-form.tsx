@@ -5,7 +5,9 @@ import { useActionState } from 'react';
 import { updatePlan } from '@/lib/actions-planes';
 import { Plan } from '@prisma/client';
 
-export default function EditForm({ plan }: { plan: Plan }) {
+type PlanSerializable = Omit<Plan, 'precio'> & { precio: number };
+
+export default function EditForm({ plan }: { plan: PlanSerializable }) {
   const initialState = { message: '', errors: {} };
   const updatePlanWithId = updatePlan.bind(null, plan.id);
   const [state, dispatch, isPending] = useActionState(updatePlanWithId, initialState);

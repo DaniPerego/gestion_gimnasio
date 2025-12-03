@@ -93,8 +93,7 @@ export async function deletePlan(id: string) {
       where: { id },
     });
     revalidatePath('/admin/planes');
-    return { message: 'Plan eliminado.' };
   } catch (error) {
-    return { message: 'Error de base de datos: No se pudo eliminar el plan.' };
+    console.error('Error deleting plan:', error);
   }
 }

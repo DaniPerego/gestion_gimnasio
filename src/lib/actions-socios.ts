@@ -98,8 +98,7 @@ export async function deleteSocio(id: string) {
       where: { id },
     });
     revalidatePath('/admin/socios');
-    return { message: 'Socio eliminado.' };
   } catch (error) {
-    return { message: 'Error de base de datos: No se pudo eliminar el socio.' };
+    console.error('Error deleting socio:', error);
   }
 }
