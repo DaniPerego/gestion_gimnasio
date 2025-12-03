@@ -73,6 +73,7 @@ export default async function AdminLayout({
 function NavLinks() {
   const links = [
     { name: 'Dashboard', href: '/admin' },
+    { name: 'Usuarios', href: '/admin/usuarios' },
     { name: 'Socios', href: '/admin/socios' },
     { name: 'Planes', href: '/admin/planes' },
     { name: 'Suscripciones', href: '/admin/suscripciones' },
