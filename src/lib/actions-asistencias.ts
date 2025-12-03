@@ -13,12 +13,13 @@ export type CheckInState = {
   errors?: {
     dni?: string[];
   };
-  status?: 'success' | 'error' | 'warning'; // warning for expired subscription but allowed entry?
+  status?: 'success' | 'error' | 'warning'; 
   socio?: {
     nombre: string;
     apellido: string;
+    telefono?: string | null;
     estadoSuscripcion: 'ACTIVA' | 'VENCIDA' | 'SIN_SUSCRIPCION';
-    diasVencimiento?: number; // Days until expiration or days since expiration
+    diasVencimiento?: number; 
   };
 };
 
@@ -88,18 +89,21 @@ export async function registrarAsistencia(prevState: CheckInState, formData: For
       },
     });
 
-    revalidatePath('/admin'); // Update dashboard attendance count
+    revalidatePath('/admin'); 
     revalidatePath('/admin/asistencias');
 
     let message = 'Asistencia registrada correctamente.';
-    let status: 'success' | 'warning' = 'success';
+    let status: 'success' | 'warning' | 'error' = 'success';
 
     if (estadoSuscripcion === 'VENCIDA') {
-      message = 'Asistencia registrada, pero la suscripción está VENCIDA.';
-      status = 'warning';
+      message = 'ALERTA: La suscripción está VENCIDA.';
+      status = 'error'; // Rojo
     } else if (estadoSuscripcion === 'SIN_SUSCRIPCION') {
-      message = 'Asistencia registrada, pero NO tiene suscripción activa.';
-      status = 'warning';
+      message = 'ALERTA: El socio NO tiene suscripción activa.';
+      status = 'error'; // Rojo
+    } else if (estadoSuscripcion === 'ACTIVA' && diasVencimiento <= 7) {
+      message = `ATENCIÓN: La suscripción vence en ${diasVencimiento} días.`;
+      status = 'warning'; // Naranja/Amarillo
     }
 
     return {
@@ -108,6 +112,7 @@ export async function registrarAsistencia(prevState: CheckInState, formData: For
       socio: {
         nombre: socio.nombre,
         apellido: socio.apellido,
+        telefono: socio.telefono,
         estadoSuscripcion,
         diasVencimiento,
       },
