@@ -68,27 +68,32 @@ export async function registrarAsistencia(prevState: CheckInState, formData: For
     const now = new Date();
     const currentDay = now.getDate();
 
-    // Buscar suscripción activa que cubra la fecha actual
-    const suscripcionActiva = socio.suscripciones.find(s => {
-        const fechaFin = new Date(s.fechaFin);
-        // Ajustar fechaFin al final del día para comparación justa
-        fechaFin.setHours(23, 59, 59, 999);
-        return fechaFin >= now;
-    });
-
-    if (suscripcionActiva) {
+    if (socio.esLibre) {
         estadoSuscripcion = 'ACTIVA';
-        const fechaFin = new Date(suscripcionActiva.fechaFin);
-        const diffTime = fechaFin.getTime() - now.getTime();
-        diasVencimiento = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        // No calculamos días de vencimiento porque es libre
     } else {
-        // Si no tiene suscripción vigente, aplicamos lógica de días del mes
-        if (currentDay <= 10) {
-            estadoSuscripcion = 'ACTIVA'; // Periodo de gracia / pago
-        } else if (currentDay <= 15) {
-            estadoSuscripcion = 'PERSUADIDO'; // Alerta naranja
+        // Buscar suscripción activa que cubra la fecha actual
+        const suscripcionActiva = socio.suscripciones.find(s => {
+            const fechaFin = new Date(s.fechaFin);
+            // Ajustar fechaFin al final del día para comparación justa
+            fechaFin.setHours(23, 59, 59, 999);
+            return fechaFin >= now;
+        });
+
+        if (suscripcionActiva) {
+            estadoSuscripcion = 'ACTIVA';
+            const fechaFin = new Date(suscripcionActiva.fechaFin);
+            const diffTime = fechaFin.getTime() - now.getTime();
+            diasVencimiento = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         } else {
-            estadoSuscripcion = 'VENCIDA'; // Alerta roja
+            // Si no tiene suscripción vigente, aplicamos lógica de días del mes
+            if (currentDay <= 10) {
+                estadoSuscripcion = 'ACTIVA'; // Periodo de gracia / pago
+            } else if (currentDay <= 15) {
+                estadoSuscripcion = 'PERSUADIDO'; // Alerta naranja
+            } else {
+                estadoSuscripcion = 'VENCIDA'; // Alerta roja
+            }
         }
     }
 
@@ -105,13 +110,16 @@ export async function registrarAsistencia(prevState: CheckInState, formData: For
     let message = 'Asistencia registrada correctamente.';
     let status: 'success' | 'warning' | 'error' = 'success';
 
-    if (estadoSuscripcion === 'VENCIDA') {
+    if (socio.esLibre) {
+        message = 'Socio LIBRE (Acceso Ilimitado).';
+        status = 'success';
+    } else if (estadoSuscripcion === 'VENCIDA') {
       message = 'ALERTA: Cuota Vencida / Suspendida.';
       status = 'error'; // Rojo
     } else if (estadoSuscripcion === 'PERSUADIDO') {
       message = 'ALERTA: Cuota por vencer (Persuasión).';
       status = 'warning'; // Naranja
-    } else if (estadoSuscripcion === 'ACTIVA' && !suscripcionActiva) {
+    } else if (estadoSuscripcion === 'ACTIVA' && !socio.suscripciones.some(s => new Date(s.fechaFin) >= now)) {
         message = 'Socio Activo (Periodo de pago 1-10).';
         status = 'success';
     } else {

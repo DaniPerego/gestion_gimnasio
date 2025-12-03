@@ -12,6 +12,7 @@ const FormSchema = z.object({
   dni: z.string().min(1, 'El DNI es obligatorio'),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   telefono: z.string().optional(),
+  esLibre: z.string().optional(), // Checkbox returns "on" or undefined
 });
 
 const CreateSocio = FormSchema.omit({ id: true });
@@ -24,6 +25,7 @@ export async function createSocio(prevState: any, formData: FormData) {
     dni: formData.get('dni'),
     email: formData.get('email'),
     telefono: formData.get('telefono'),
+    esLibre: formData.get('esLibre'),
   });
 
   if (!validatedFields.success) {
@@ -33,7 +35,7 @@ export async function createSocio(prevState: any, formData: FormData) {
     };
   }
 
-  const { nombre, apellido, dni, email, telefono } = validatedFields.data;
+  const { nombre, apellido, dni, email, telefono, esLibre } = validatedFields.data;
 
   try {
     await prisma.socio.create({
@@ -43,6 +45,7 @@ export async function createSocio(prevState: any, formData: FormData) {
         dni,
         email: email || null,
         telefono: telefono || null,
+        esLibre: esLibre === 'on',
       },
     });
   } catch (error) {
@@ -62,6 +65,7 @@ export async function updateSocio(id: string, prevState: any, formData: FormData
       dni: formData.get('dni'),
       email: formData.get('email'),
       telefono: formData.get('telefono'),
+      esLibre: formData.get('esLibre'),
     });
   
     if (!validatedFields.success) {
@@ -71,7 +75,7 @@ export async function updateSocio(id: string, prevState: any, formData: FormData
       };
     }
   
-    const { nombre, apellido, dni, email, telefono } = validatedFields.data;
+    const { nombre, apellido, dni, email, telefono, esLibre } = validatedFields.data;
   
     try {
       await prisma.socio.update({
@@ -82,6 +86,7 @@ export async function updateSocio(id: string, prevState: any, formData: FormData
           dni,
           email: email || null,
           telefono: telefono || null,
+          esLibre: esLibre === 'on',
         },
       });
     } catch (error) {

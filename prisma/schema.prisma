@@ -50,6 +50,7 @@ model Socio {
   telefono        String?
   fechaNacimiento DateTime?
   activo          Boolean       @default(true)
+  esLibre         Boolean       @default(false)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   

@@ -127,6 +127,24 @@ export default function Form() {
           </div>
         </div>
 
+        {/* Es Libre */}
+        <div className="mb-4">
+          <div className="flex items-center">
+            <input
+              id="esLibre"
+              name="esLibre"
+              type="checkbox"
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label htmlFor="esLibre" className="ml-2 block text-sm font-medium text-gray-900">
+              Socio Libre (Acceso gratuito/ilimitado)
+            </label>
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            Si se marca, el socio tendrá acceso permitido siempre, sin necesidad de suscripción.
+          </p>
+        </div>
+
         <div aria-live="polite" aria-atomic="true">
             {state.message && (
                 <p className="mt-2 text-sm text-red-500" key={state.message}>

@@ -59,3 +59,29 @@ export async function fetchSuscripcionesPages(query: string) {
     throw new Error('Failed to fetch total number of subscriptions.');
   }
 }
+
+export async function fetchSuscripcionById(id: string) {
+  noStore();
+  try {
+    const suscripcion = await prisma.suscripcion.findUnique({
+      where: { id },
+      include: {
+        socio: true,
+        plan: true,
+      },
+    });
+
+    if (!suscripcion) return null;
+
+    return {
+      ...suscripcion,
+      plan: {
+        ...suscripcion.plan,
+        precio: Number(suscripcion.plan.precio),
+      },
+    };
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch subscription.');
+  }
+}

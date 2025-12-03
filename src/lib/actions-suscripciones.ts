@@ -89,3 +89,46 @@ export async function cancelSuscripcion(id: string) {
     throw new Error('Failed to cancel subscription.');
   }
 }
+
+const UpdateSuscripcionSchema = z.object({
+  fechaInicio: z.string().min(1, 'La fecha de inicio es obligatoria'),
+  fechaFin: z.string().min(1, 'La fecha de fin es obligatoria'),
+});
+
+export async function updateSuscripcion(id: string, prevState: any, formData: FormData) {
+  const validatedFields = UpdateSuscripcionSchema.safeParse({
+    fechaInicio: formData.get('fechaInicio'),
+    fechaFin: formData.get('fechaFin'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Faltan campos obligatorios.',
+    };
+  }
+
+  const { fechaInicio, fechaFin } = validatedFields.data;
+
+  try {
+    const fechaInicioDate = new Date(fechaInicio);
+    const fechaFinDate = new Date(fechaFin);
+    // Set end of day for fechaFin
+    fechaFinDate.setHours(23, 59, 59, 999);
+
+    await prisma.suscripcion.update({
+      where: { id },
+      data: {
+        fechaInicio: fechaInicioDate,
+        fechaFin: fechaFinDate,
+      },
+    });
+  } catch (error) {
+    return {
+      message: 'Error de base de datos: No se pudo actualizar la suscripción.',
+    };
+  }
+
+  revalidatePath('/admin/suscripciones');
+  redirect('/admin/suscripciones');
+}
