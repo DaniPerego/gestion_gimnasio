@@ -153,6 +153,11 @@ export default function EditForm({ usuario }: { usuario: Usuario }) {
                     <input id="permisoUsuarios" name="permisoUsuarios" type="checkbox" defaultChecked={usuario.permisoUsuarios} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                     <label htmlFor="permisoUsuarios" className="ml-2 block text-sm text-gray-900">Usuarios</label>
                 </div>
+                <div className="flex items-center">
+                    {/* @ts-ignore: permisoTransacciones might not be in the type definition yet */}
+                    <input id="permisoTransacciones" name="permisoTransacciones" type="checkbox" defaultChecked={usuario.permisoTransacciones} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <label htmlFor="permisoTransacciones" className="ml-2 block text-sm text-gray-900">Transacciones</label>
+                </div>
             </div>
         </div>
 

@@ -19,6 +19,7 @@ const FormSchema = z.object({
   permisoReportes: z.string().optional().nullable(),
   permisoConfiguracion: z.string().optional().nullable(),
   permisoUsuarios: z.string().optional().nullable(),
+  permisoTransacciones: z.string().optional().nullable(),
 });
 
 const CreateUsuario = FormSchema.omit({ id: true });
@@ -39,6 +40,7 @@ export async function createUsuario(prevState: any, formData: FormData) {
     permisoReportes: formData.get('permisoReportes'),
     permisoConfiguracion: formData.get('permisoConfiguracion'),
     permisoUsuarios: formData.get('permisoUsuarios'),
+    permisoTransacciones: formData.get('permisoTransacciones'),
   });
 
   if (!validatedFields.success) {
@@ -48,7 +50,7 @@ export async function createUsuario(prevState: any, formData: FormData) {
     };
   }
 
-  const { nombre, email, password, rol, permisoSocios, permisoPlanes, permisoSuscripciones, permisoAsistencias, permisoReportes, permisoConfiguracion, permisoUsuarios } = validatedFields.data;
+  const { nombre, email, password, rol, permisoSocios, permisoPlanes, permisoSuscripciones, permisoAsistencias, permisoReportes, permisoConfiguracion, permisoUsuarios, permisoTransacciones } = validatedFields.data;
   const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
@@ -65,6 +67,7 @@ export async function createUsuario(prevState: any, formData: FormData) {
         permisoReportes: permisoReportes === 'on',
         permisoConfiguracion: permisoConfiguracion === 'on',
         permisoUsuarios: permisoUsuarios === 'on',
+        permisoTransacciones: permisoTransacciones === 'on',
       },
     });
   } catch (error) {
@@ -92,6 +95,7 @@ export async function updateUsuario(id: string, prevState: any, formData: FormDa
     permisoReportes: formData.get('permisoReportes'),
     permisoConfiguracion: formData.get('permisoConfiguracion'),
     permisoUsuarios: formData.get('permisoUsuarios'),
+    permisoTransacciones: formData.get('permisoTransacciones'),
     ...(passwordRaw ? { password: passwordRaw } : {}),
   };
 
@@ -109,7 +113,7 @@ export async function updateUsuario(id: string, prevState: any, formData: FormDa
     };
   }
 
-  const { nombre, email, rol, password, permisoSocios, permisoPlanes, permisoSuscripciones, permisoAsistencias, permisoReportes, permisoConfiguracion, permisoUsuarios } = validatedFields.data;
+  const { nombre, email, rol, password, permisoSocios, permisoPlanes, permisoSuscripciones, permisoAsistencias, permisoReportes, permisoConfiguracion, permisoUsuarios, permisoTransacciones } = validatedFields.data;
 
   const dataToUpdate: any = {
     nombre,
@@ -122,6 +126,7 @@ export async function updateUsuario(id: string, prevState: any, formData: FormDa
     permisoReportes: permisoReportes === 'on',
     permisoConfiguracion: permisoConfiguracion === 'on',
     permisoUsuarios: permisoUsuarios === 'on',
+    permisoTransacciones: permisoTransacciones === 'on',
   };
 
   if (password) {

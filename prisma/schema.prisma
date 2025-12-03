@@ -33,6 +33,7 @@ model Usuario {
   permisoReportes      Boolean @default(false)
   permisoConfiguracion Boolean @default(false)
   permisoUsuarios      Boolean @default(false)
+  permisoTransacciones Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
