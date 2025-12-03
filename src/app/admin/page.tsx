@@ -1,7 +1,26 @@
 import { fetchCardData } from '@/lib/data-dashboard';
 import Link from 'next/link';
+import { auth } from '@/auth';
+import prisma from '@/lib/prisma';
+import { redirect } from 'next/navigation';
 
 export default async function AdminPage() {
+  const session = await auth();
+  let userPermissions = null;
+  
+  if (session?.user?.email) {
+    userPermissions = await prisma.usuario.findUnique({
+        where: { email: session.user.email },
+    });
+  }
+  
+  const isAdmin = userPermissions?.rol === 'ADMIN' || userPermissions?.rol === 'admin';
+
+  if (!isAdmin) {
+      // Si no es admin, redirigir a la primera sección disponible (generalmente Socios)
+      redirect('/admin/socios');
+  }
+
   const {
     numberOfSocios,
     totalIncome,

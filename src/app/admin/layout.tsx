@@ -82,13 +82,13 @@ function NavLinks({ permissions, role }: { permissions: any, role?: string }) {
   const isAdmin = role === 'ADMIN' || role === 'admin';
   
   const links = [
-    { name: 'Dashboard', href: '/admin', show: true },
+    { name: 'Dashboard', href: '/admin', show: isAdmin },
     { name: 'Usuarios', href: '/admin/usuarios', show: isAdmin || (permissions?.permisoUsuarios ?? false) },
-    { name: 'Socios', href: '/admin/socios', show: isAdmin || (permissions?.permisoSocios ?? true) },
+    { name: 'Socios', href: '/admin/socios', show: isAdmin || (permissions?.permisoSocios ?? false) },
     { name: 'Planes', href: '/admin/planes', show: isAdmin || (permissions?.permisoPlanes ?? false) },
-    { name: 'Suscripciones', href: '/admin/suscripciones', show: isAdmin || (permissions?.permisoSuscripciones ?? true) },
-    { name: 'Asistencias', href: '/admin/asistencias', show: isAdmin || (permissions?.permisoAsistencias ?? true) },
-    { name: 'Transacciones', href: '/admin/transacciones', show: isAdmin || (permissions?.permisoSuscripciones ?? true) }, // Linked to Suscripciones usually
+    { name: 'Suscripciones', href: '/admin/suscripciones', show: isAdmin || (permissions?.permisoSuscripciones ?? false) },
+    { name: 'Asistencias', href: '/admin/asistencias', show: isAdmin || (permissions?.permisoAsistencias ?? false) },
+    { name: 'Transacciones', href: '/admin/transacciones', show: isAdmin }, // Only Admin
     { name: 'Reportes', href: '/admin/reportes', show: isAdmin || (permissions?.permisoReportes ?? false) },
     { name: 'Configuración', href: '/admin/configuracion', show: isAdmin || (permissions?.permisoConfiguracion ?? false) },
   ];
