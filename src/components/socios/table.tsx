@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { fetchFilteredSocios } from '@/lib/data-socios';
 import { deleteSocio } from '@/lib/actions-socios';
+import WhatsAppButton from './whatsapp-button';
 
 export default async function SociosTable({
   query,
@@ -37,6 +38,7 @@ export default async function SociosTable({
                     <p className="text-xl font-medium">{socio.dni}</p>
                   </div>
                   <div className="flex justify-end gap-2">
+                    <WhatsAppButton telefono={socio.telefono} nombre={socio.nombre} />
                     <Link href={`/admin/socios/${socio.id}/edit`} className="rounded-md border p-2 hover:bg-gray-100">
                         ✏️
                     </Link>
@@ -94,6 +96,7 @@ export default async function SociosTable({
                   </td>
                   <td className="whitespace-nowrap py-3 pl-6 pr-3">
                     <div className="flex justify-end gap-3">
+                        <WhatsAppButton telefono={socio.telefono} nombre={socio.nombre} />
                         <Link href={`/admin/socios/${socio.id}/edit`} className="rounded-md border p-2 hover:bg-gray-100">
                             ✏️
                         </Link>

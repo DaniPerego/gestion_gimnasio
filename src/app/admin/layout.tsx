@@ -46,7 +46,7 @@ export default async function AdminLayout({
           </Link>
           
           <div className="flex grow flex-row justify-between space-x-2 md:flex-col md:space-x-0 md:space-y-2">
-            <NavLinks permissions={userPermissions} />
+            <NavLinks permissions={userPermissions} role={userPermissions?.rol} />
             <div className="hidden h-auto w-full grow rounded-md bg-white/10 md:block"></div>
             
             <form
@@ -78,17 +78,19 @@ export default async function AdminLayout({
   );
 }
 
-function NavLinks({ permissions }: { permissions: any }) {
+function NavLinks({ permissions, role }: { permissions: any, role?: string }) {
+  const isAdmin = role === 'ADMIN' || role === 'admin';
+  
   const links = [
     { name: 'Dashboard', href: '/admin', show: true },
-    { name: 'Usuarios', href: '/admin/usuarios', show: permissions?.permisoUsuarios ?? false },
-    { name: 'Socios', href: '/admin/socios', show: permissions?.permisoSocios ?? true },
-    { name: 'Planes', href: '/admin/planes', show: permissions?.permisoPlanes ?? false },
-    { name: 'Suscripciones', href: '/admin/suscripciones', show: permissions?.permisoSuscripciones ?? true },
-    { name: 'Asistencias', href: '/admin/asistencias', show: permissions?.permisoAsistencias ?? true },
-    { name: 'Transacciones', href: '/admin/transacciones', show: permissions?.permisoSuscripciones ?? true }, // Linked to Suscripciones usually
-    { name: 'Reportes', href: '/admin/reportes', show: permissions?.permisoReportes ?? false },
-    { name: 'Configuración', href: '/admin/configuracion', show: permissions?.permisoConfiguracion ?? false },
+    { name: 'Usuarios', href: '/admin/usuarios', show: isAdmin || (permissions?.permisoUsuarios ?? false) },
+    { name: 'Socios', href: '/admin/socios', show: isAdmin || (permissions?.permisoSocios ?? true) },
+    { name: 'Planes', href: '/admin/planes', show: isAdmin || (permissions?.permisoPlanes ?? false) },
+    { name: 'Suscripciones', href: '/admin/suscripciones', show: isAdmin || (permissions?.permisoSuscripciones ?? true) },
+    { name: 'Asistencias', href: '/admin/asistencias', show: isAdmin || (permissions?.permisoAsistencias ?? true) },
+    { name: 'Transacciones', href: '/admin/transacciones', show: isAdmin || (permissions?.permisoSuscripciones ?? true) }, // Linked to Suscripciones usually
+    { name: 'Reportes', href: '/admin/reportes', show: isAdmin || (permissions?.permisoReportes ?? false) },
+    { name: 'Configuración', href: '/admin/configuracion', show: isAdmin || (permissions?.permisoConfiguracion ?? false) },
   ];
 
   return (
