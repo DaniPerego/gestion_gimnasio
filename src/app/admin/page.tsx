@@ -1,0 +1,54 @@
+import { fetchCardData } from '@/lib/data-dashboard';
+import Link from 'next/link';
+
+export default async function AdminPage() {
+  const {
+    numberOfSocios,
+    totalIncome,
+    expiringSubscriptions,
+    todaysAttendance,
+  } = await fetchCardData();
+
+  const formattedIncome = new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    minimumFractionDigits: 0,
+  }).format(totalIncome);
+
+  return (
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Tarjetas de Resumen */}
+      <div className="rounded-xl bg-white p-4 shadow-sm">
+        <h3 className="text-sm font-medium text-gray-500">Socios Activos</h3>
+        <p className="text-2xl font-bold text-gray-900 truncate">{numberOfSocios}</p>
+      </div>
+      <div className="rounded-xl bg-white p-4 shadow-sm">
+        <h3 className="text-sm font-medium text-gray-500">Ingresos del Mes</h3>
+        <p className="text-2xl font-bold text-gray-900 truncate">{formattedIncome}</p>
+      </div>
+      <div className="rounded-xl bg-white p-4 shadow-sm">
+        <h3 className="text-sm font-medium text-gray-500">Vencimientos Próximos</h3>
+        <p className="text-2xl font-bold text-red-600 truncate">{expiringSubscriptions}</p>
+      </div>
+      <div className="rounded-xl bg-white p-4 shadow-sm">
+        <h3 className="text-sm font-medium text-gray-500">Asistencias Hoy</h3>
+        <p className="text-2xl font-bold text-gray-900 truncate">{todaysAttendance}</p>
+      </div>
+
+      <div className="col-span-full mt-4 rounded-xl bg-white p-6 shadow-sm">
+        <h3 className="mb-4 text-lg font-medium text-gray-900">Acciones Rápidas</h3>
+        <div className="flex gap-4">
+            <Link href="/admin/transacciones/create" className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-500">
+                Registrar Pago
+            </Link>
+            <Link href="/admin/socios/create" className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-500">
+                Nuevo Socio
+            </Link>
+            <Link href="/admin/asistencias/check-in" className="rounded bg-gray-600 px-4 py-2 text-white hover:bg-gray-500">
+                Check-in Manual
+            </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
