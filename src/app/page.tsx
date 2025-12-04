@@ -1,35 +1,48 @@
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-gray-50">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-linear-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Sistema de Gestión de Gimnasio
-        </p>
+    <main className="relative flex min-h-screen flex-col items-center justify-center p-4 bg-gray-100 dark:bg-gray-950 transition-colors overflow-hidden">
+      {/* Botón de tema flotante */}
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
       </div>
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-linear-to-br before:from-transparent before:to-blue-500 before:opacity-10 before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-60 after:translate-x-1/3 after:bg-linear-to-t after:from-blue-200 after:via-blue-200 after:opacity-40 after:blur-2xl after:content-[''] before:dark:bg-linear-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <h1 className="text-4xl font-bold text-center text-gray-900 dark:text-white sm:text-6xl">
-          Administración de Gimnasios
-        </h1>
+      {/* Efectos de fondo (simplificados del original para mantener el toque moderno pero menos intrusivo) */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -z-10">
+        <div className="h-[300px] w-[480px] rounded-full bg-blue-500/20 blur-[100px] dark:bg-blue-600/20" />
       </div>
 
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-1 lg:text-left mt-12">
-        <Link
-          href="/login"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30 mx-auto"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold text-center`}>
-            Ingresar al Sistema{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-center`}>
-            Accede al panel administrativo para gestionar socios y planes.
+      <div className="z-10 flex flex-col items-center text-center gap-8 max-w-3xl">
+        <div className="space-y-4">
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-6xl">
+            Administración de Gimnasios
+          </h1>
+          <p className="text-lg leading-8 text-gray-600 dark:text-gray-300">
+            Sistema integral White-Label para el control de socios, asistencias, pagos y reportes financieros.
           </p>
-        </Link>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mt-4">
+          <Link
+            href="/login"
+            className="rounded-lg bg-blue-600 px-8 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all hover:scale-105"
+          >
+            Ingresar al Sistema
+          </Link>
+          
+          <Link
+            href="/kiosco"
+            className="text-sm font-semibold leading-6 text-gray-900 dark:text-white hover:underline underline-offset-4"
+          >
+            Ir al Kiosco de Acceso <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+      </div>
+
+      <div className="absolute bottom-4 text-center text-xs text-gray-500 dark:text-gray-400">
+        <p>&copy; {new Date().getFullYear()} GMS White-Label. Todos los derechos reservados.</p>
       </div>
     </main>
   );
