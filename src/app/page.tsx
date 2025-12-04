@@ -31,13 +31,6 @@ export default function Home() {
           >
             Ingresar al Sistema
           </Link>
-          
-          <Link
-            href="/kiosco"
-            className="text-sm font-semibold leading-6 text-gray-900 dark:text-white hover:underline underline-offset-4"
-          >
-            Ir al Kiosco de Acceso <span aria-hidden="true">→</span>
-          </Link>
         </div>
       </div>
 
