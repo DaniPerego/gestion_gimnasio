@@ -36,8 +36,8 @@ export default function CheckInForm() {
   }, [state]);
 
   return (
-    <div className="w-full max-w-md space-y-8">
-      <form ref={formRef} action={dispatch} className="mt-8 space-y-6">
+    <div className="w-full space-y-4">
+      <form ref={formRef} action={dispatch} className="mt-4 space-y-4">
         <div className="rounded-md shadow-sm -space-y-px">
           <div>
             <label htmlFor="dni" className="sr-only">
@@ -49,7 +49,7 @@ export default function CheckInForm() {
               type="text"
               required
               ref={inputRef}
-              className="relative block w-full rounded-md border-0 py-4 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-xl sm:leading-6 text-center tracking-widest"
+              className="relative block w-full rounded-md border-0 py-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-lg sm:leading-6 text-center tracking-widest"
               placeholder="Ingrese DNI"
               autoComplete="off"
               autoFocus
@@ -61,9 +61,9 @@ export default function CheckInForm() {
           <button
             type="submit"
             disabled={isPending}
-            className="group relative flex w-full justify-center rounded-md bg-blue-600 px-3 py-3 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:bg-blue-300"
+            className="group relative flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:bg-blue-300"
           >
-            {isPending ? 'Registrando...' : 'Registrar Asistencia'}
+            {isPending ? '...' : 'Registrar'}
           </button>
         </div>
       </form>

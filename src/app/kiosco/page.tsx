@@ -23,15 +23,11 @@ export default async function KioscoPage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-2xl">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Control de Acceso</h1>
-          <p className="mt-2 text-gray-600">Ingrese su DNI para registrar asistencia</p>
+      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+        <div className="mb-4 text-center">
+          <h1 className="text-xl font-bold text-gray-900">Control de Acceso</h1>
         </div>
         <CheckInForm />
-        <div className="mt-8 text-center text-sm text-gray-400">
-            <p>Modo Kiosco - GMS White-Label</p>
-        </div>
       </div>
     </main>
   );

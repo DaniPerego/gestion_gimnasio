@@ -2,6 +2,8 @@ import { getConfiguracion } from '@/lib/data';
 import { auth, signOut } from '@/auth';
 import Link from 'next/link';
 import prisma from '@/lib/prisma';
+import NavLinks from '@/components/admin/nav-links';
+import MobileSidebar from '@/components/admin/mobile-sidebar';
 
 export default async function AdminLayout({
   children,
@@ -25,42 +27,58 @@ export default async function AdminLayout({
 
   return (
     <div className="flex h-screen flex-col md:flex-row md:overflow-hidden">
-      {/* Sidebar con estilos dinámicos */}
+      
+      {/* Mobile Sidebar */}
+      <MobileSidebar 
+        permissions={userPermissions}
+        role={userPermissions?.rol}
+        nombreGimnasio={nombreGimnasio}
+        primaryColor={primaryColor}
+      >
+        <form
+          action={async () => {
+            'use server';
+            await signOut();
+          }}
+        >
+          <button className="flex w-full items-center justify-start gap-2 rounded-md bg-white/10 p-3 text-sm font-medium text-white hover:bg-white/20">
+            Cerrar Sesión
+          </button>
+        </form>
+      </MobileSidebar>
+
+      {/* Desktop Sidebar */}
       <div 
-        className="w-full flex-none md:w-64"
+        className="hidden md:flex w-64 flex-none flex-col px-3 py-4"
         style={{ backgroundColor: primaryColor }}
       >
-        <div className="flex h-full flex-col px-3 py-4 md:px-2">
-          <Link
-            className="mb-2 flex h-20 items-end justify-start rounded-md p-4 md:h-40"
-            href="/admin"
-            style={{ backgroundColor: secondaryColor }}
-          >
-            <div className="w-32 text-white md:w-40">
-              <h1 className="text-xl font-bold">{nombreGimnasio}</h1>
-              {config?.logoUrl && (
-                 // Placeholder para logo si existiera URL
-                 <span className="text-xs opacity-70">Logo Configurado</span>
-              )}
-            </div>
-          </Link>
-          
-          <div className="flex grow flex-row justify-between space-x-2 md:flex-col md:space-x-0 md:space-y-2">
-            <NavLinks permissions={userPermissions} role={userPermissions?.rol} />
-            <div className="hidden h-auto w-full grow rounded-md bg-white/10 md:block"></div>
-            
-            <form
-              action={async () => {
-                'use server';
-                await signOut();
-              }}
-            >
-              <button className="flex h-12 w-full grow items-center justify-center gap-2 rounded-md bg-white/10 p-3 text-sm font-medium text-white hover:bg-white/20 md:flex-none md:justify-start md:p-2 md:px-3">
-                <div className="hidden md:block">Cerrar Sesión</div>
-                <div className="text-xs opacity-70 md:hidden">Salir</div>
-              </button>
-            </form>
+        <Link
+          className="mb-2 flex h-40 items-end justify-start rounded-md p-4"
+          href="/admin"
+          style={{ backgroundColor: secondaryColor }}
+        >
+          <div className="w-40 text-white">
+            <h1 className="text-xl font-bold">{nombreGimnasio}</h1>
+            {config?.logoUrl && (
+                <span className="text-xs opacity-70">Logo Configurado</span>
+            )}
           </div>
+        </Link>
+        
+        <div className="flex grow flex-col space-y-2">
+          <NavLinks permissions={userPermissions} role={userPermissions?.rol} />
+          <div className="h-auto w-full grow rounded-md bg-white/10"></div>
+          
+          <form
+            action={async () => {
+              'use server';
+              await signOut();
+            }}
+          >
+            <button className="flex h-12 w-full items-center justify-start gap-2 rounded-md bg-white/10 p-2 px-3 text-sm font-medium text-white hover:bg-white/20">
+              <div>Cerrar Sesión</div>
+            </button>
+          </form>
         </div>
       </div>
       
@@ -75,40 +93,5 @@ export default async function AdminLayout({
         {children}
       </div>
     </div>
-  );
-}
-
-import { Usuario } from '@prisma/client';
-
-function NavLinks({ permissions, role }: { permissions: Usuario | null, role?: string }) {
-  const isAdmin = role === 'ADMIN' || role === 'admin';
-  
-  const links = [
-    { name: 'Dashboard', href: '/admin', show: isAdmin },
-    { name: 'Usuarios', href: '/admin/usuarios', show: isAdmin || (permissions?.permisoUsuarios ?? false) },
-    { name: 'Socios', href: '/admin/socios', show: isAdmin || (permissions?.permisoSocios ?? false) },
-    { name: 'Planes', href: '/admin/planes', show: isAdmin || (permissions?.permisoPlanes ?? false) },
-    { name: 'Suscripciones', href: '/admin/suscripciones', show: isAdmin || (permissions?.permisoSuscripciones ?? false) },
-    { name: 'Asistencias', href: '/admin/asistencias', show: isAdmin || (permissions?.permisoAsistencias ?? false) },
-    { name: 'Transacciones', href: '/admin/transacciones', show: isAdmin || (permissions?.permisoTransacciones ?? false) },
-    { name: 'Reportes', href: '/admin/reportes', show: isAdmin || (permissions?.permisoReportes ?? false) },
-    { name: 'Configuración', href: '/admin/configuracion', show: isAdmin || (permissions?.permisoConfiguracion ?? false) },
-  ];
-
-  return (
-    <>
-      {links.filter(link => link.show).map((link) => {
-        return (
-          <Link
-            key={link.name}
-            href={link.href}
-            className="flex h-12 grow items-center justify-center gap-2 rounded-md bg-white/10 p-3 text-sm font-medium text-white hover:bg-white/20 md:flex-none md:justify-start md:p-2 md:px-3"
-          >
-            <p className="hidden md:block">{link.name}</p>
-            <p className="block md:hidden text-xs">{link.name.slice(0,3)}</p>
-          </Link>
-        );
-      })}
-    </>
   );
 }
