@@ -6,7 +6,7 @@ export default async function Page() {
 
   return (
     <main className="w-full">
-      <h1 className="mb-8 text-2xl font-bold text-gray-800">Reportes y Estadísticas</h1>
+      <h1 className="mb-8 text-2xl font-bold text-gray-800 dark:text-white">Reportes y Estadísticas</h1>
       
       <div className="grid gap-6 md:grid-cols-2">
         {/* Reporte de Ingresos */}

@@ -10,7 +10,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "GMS White-Label",
+  title: "Administración de Gimnasios",
   description: "Sistema de Gestión de Gimnasio",
 };
 

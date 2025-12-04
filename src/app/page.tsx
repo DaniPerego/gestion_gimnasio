@@ -10,8 +10,8 @@ export default function Home() {
       </div>
 
       <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-linear-to-br before:from-transparent before:to-blue-500 before:opacity-10 before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-60 after:translate-x-1/3 after:bg-linear-to-t after:from-blue-200 after:via-blue-200 after:opacity-40 after:blur-2xl after:content-[''] before:dark:bg-linear-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <h1 className="text-4xl font-bold text-center text-gray-900 sm:text-6xl">
-          GMS White-Label
+        <h1 className="text-4xl font-bold text-center text-gray-900 dark:text-white sm:text-6xl">
+          Administración de Gimnasios
         </h1>
       </div>
 
