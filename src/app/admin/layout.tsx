@@ -4,6 +4,7 @@ import Link from 'next/link';
 import prisma from '@/lib/prisma';
 import NavLinks from '@/components/admin/nav-links';
 import MobileSidebar from '@/components/admin/mobile-sidebar';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default async function AdminLayout({
   children,
@@ -83,11 +84,14 @@ export default async function AdminLayout({
       </div>
       
       {/* Contenido Principal */}
-      <div className="grow p-6 md:overflow-y-auto md:p-12 bg-gray-50">
+      <div className="grow p-6 md:overflow-y-auto md:p-12 bg-gray-50 dark:bg-gray-900 transition-colors">
         <header className="mb-8 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-800">Panel de Administración</h2>
-            <div className="text-sm text-gray-600">
-                Hola, <span className="font-semibold">{session?.user?.name || 'Usuario'}</span> ({session?.user?.rol})
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Panel de Administración</h2>
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+              <div className="text-sm text-gray-600 dark:text-gray-300">
+                  Hola, <span className="font-semibold">{session?.user?.name || 'Usuario'}</span> ({session?.user?.rol})
+              </div>
             </div>
         </header>
         {children}

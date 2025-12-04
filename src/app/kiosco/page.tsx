@@ -22,10 +22,10 @@ export default async function KioscoPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4">
-      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-gray-100 dark:bg-gray-950 p-4 transition-colors">
+      <div className="w-full max-w-sm rounded-lg bg-white dark:bg-gray-900 p-6 shadow-xl transition-colors">
         <div className="mb-4 text-center">
-          <h1 className="text-xl font-bold text-gray-900">Control de Acceso</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Control de Acceso</h1>
         </div>
         <CheckInForm />
       </div>

@@ -49,7 +49,7 @@ export default function CheckInForm() {
               type="text"
               required
               ref={inputRef}
-              className="relative block w-full rounded-md border-0 py-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-lg sm:leading-6 text-center tracking-widest"
+              className="relative block w-full rounded-md border-0 py-3 text-gray-900 dark:text-white dark:bg-gray-800 ring-1 ring-inset ring-gray-300 dark:ring-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-lg sm:leading-6 text-center tracking-widest transition-colors"
               placeholder="Ingrese DNI"
               autoComplete="off"
               autoFocus
