@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { registrarAsistencia, CheckInState } from '@/lib/actions-asistencias';
 import { CheckCircleIcon, ExclamationTriangleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import { useEffect, useRef } from 'react';
@@ -8,11 +8,14 @@ import { useEffect, useRef } from 'react';
 export default function CheckInForm() {
   const initialState: CheckInState = { message: '', errors: {} };
   const [state, dispatch, isPending] = useActionState(registrarAsistencia, initialState);
+  const [isVisible, setIsVisible] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (state.status) {
+      setIsVisible(true);
+      
       // Clear input on success/warning to allow next check-in
       if (formRef.current) {
         formRef.current.reset();
@@ -21,6 +24,14 @@ export default function CheckInForm() {
       if (inputRef.current) {
         inputRef.current.focus();
       }
+
+      // Auto-hide message logic
+      const duration = state.status === 'success' ? 2000 : 5000;
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+      }, duration);
+
+      return () => clearTimeout(timer);
     }
   }, [state]);
 
@@ -58,7 +69,7 @@ export default function CheckInForm() {
       </form>
 
       {/* Result Display */}
-      {state.message && (
+      {state.message && isVisible && (
         <div className={`rounded-md p-4 ${
           state.status === 'success' ? 'bg-green-50' : 
           state.status === 'warning' ? 'bg-orange-50' : 'bg-red-50'
@@ -100,7 +111,7 @@ export default function CheckInForm() {
                         )}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
+                        className={`inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 ${
                             state.status === 'warning' 
                             ? 'bg-orange-600 hover:bg-orange-500 focus-visible:outline-orange-600' 
                             : 'bg-red-600 hover:bg-red-500 focus-visible:outline-red-600'

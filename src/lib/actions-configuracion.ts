@@ -3,7 +3,6 @@
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 
 const ConfigSchema = z.object({
   nombreGimnasio: z.string().min(1, 'El nombre es obligatorio'),
@@ -11,7 +10,7 @@ const ConfigSchema = z.object({
   colorSecundario: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i, 'Color inválido (Hex)'),
 });
 
-export async function updateConfiguracion(prevState: any, formData: FormData) {
+export async function updateConfiguracion(prevState: unknown, formData: FormData) {
   const validatedFields = ConfigSchema.safeParse({
     nombreGimnasio: formData.get('nombreGimnasio'),
     colorPrimario: formData.get('colorPrimario'),
@@ -50,7 +49,7 @@ export async function updateConfiguracion(prevState: any, formData: FormData) {
         },
       });
     }
-  } catch (error) {
+  } catch {
     return {
       message: 'Error de base de datos: No se pudo actualizar la configuración.',
     };

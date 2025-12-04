@@ -18,7 +18,7 @@ const FormSchema = z.object({
 const CreateSocio = FormSchema.omit({ id: true });
 const UpdateSocio = FormSchema.omit({ id: true });
 
-export async function createSocio(prevState: any, formData: FormData) {
+export async function createSocio(prevState: unknown, formData: FormData) {
   const validatedFields = CreateSocio.safeParse({
     nombre: formData.get('nombre'),
     apellido: formData.get('apellido'),
@@ -48,7 +48,7 @@ export async function createSocio(prevState: any, formData: FormData) {
         esLibre: esLibre === 'on',
       },
     });
-  } catch (error) {
+  } catch {
     return {
       message: 'Error de base de datos: No se pudo crear el socio (posible DNI duplicado).',
     };
@@ -58,7 +58,7 @@ export async function createSocio(prevState: any, formData: FormData) {
   redirect('/admin/socios');
 }
 
-export async function updateSocio(id: string, prevState: any, formData: FormData) {
+export async function updateSocio(id: string, prevState: unknown, formData: FormData) {
     const validatedFields = UpdateSocio.safeParse({
       nombre: formData.get('nombre'),
       apellido: formData.get('apellido'),
@@ -89,7 +89,7 @@ export async function updateSocio(id: string, prevState: any, formData: FormData
           esLibre: esLibre === 'on',
         },
       });
-    } catch (error) {
+    } catch {
       return { message: 'Error de base de datos: No se pudo actualizar el socio.' };
     }
   

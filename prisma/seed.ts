@@ -22,7 +22,7 @@ async function main() {
   console.log({ admin });
   
   // Crear configuración inicial por defecto si no existe
-  const config = await prisma.configuracion.create({
+  await prisma.configuracion.create({
       data: {
           nombreGimnasio: "Gimnasio Demo",
           colorPrimario: "#2563eb", // Azul estándar

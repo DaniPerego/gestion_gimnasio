@@ -27,7 +27,7 @@ const UpdateUsuario = FormSchema.omit({ id: true, password: true }).extend({
   password: z.string().optional(),
 });
 
-export async function createUsuario(prevState: any, formData: FormData) {
+export async function createUsuario(prevState: unknown, formData: FormData) {
   const validatedFields = CreateUsuario.safeParse({
     nombre: formData.get('nombre'),
     email: formData.get('email'),
@@ -70,7 +70,7 @@ export async function createUsuario(prevState: any, formData: FormData) {
         permisoTransacciones: permisoTransacciones === 'on',
       },
     });
-  } catch (error) {
+  } catch {
     return {
       message: 'Error de base de datos: No se pudo crear el usuario. El email podría estar duplicado.',
     };
@@ -80,7 +80,7 @@ export async function createUsuario(prevState: any, formData: FormData) {
   redirect('/admin/usuarios');
 }
 
-export async function updateUsuario(id: string, prevState: any, formData: FormData) {
+export async function updateUsuario(id: string, prevState: unknown, formData: FormData) {
   const passwordRaw = formData.get('password') as string;
   
   // Si la contraseña está vacía, no la validamos ni la actualizamos
@@ -115,6 +115,7 @@ export async function updateUsuario(id: string, prevState: any, formData: FormDa
 
   const { nombre, email, rol, password, permisoSocios, permisoPlanes, permisoSuscripciones, permisoAsistencias, permisoReportes, permisoConfiguracion, permisoUsuarios, permisoTransacciones } = validatedFields.data;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dataToUpdate: any = {
     nombre,
     email,
@@ -138,7 +139,7 @@ export async function updateUsuario(id: string, prevState: any, formData: FormDa
       where: { id },
       data: dataToUpdate,
     });
-  } catch (error) {
+  } catch {
     return { message: 'Error de base de datos: No se pudo actualizar el usuario.' };
   }
 

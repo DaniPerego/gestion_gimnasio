@@ -16,7 +16,7 @@ const PlanSchema = z.object({
 const CreatePlan = PlanSchema.omit({ id: true });
 const UpdatePlan = PlanSchema.omit({ id: true });
 
-export async function createPlan(prevState: any, formData: FormData) {
+export async function createPlan(prevState: unknown, formData: FormData) {
   const validatedFields = CreatePlan.safeParse({
     nombre: formData.get('nombre'),
     descripcion: formData.get('descripcion'),
@@ -42,7 +42,7 @@ export async function createPlan(prevState: any, formData: FormData) {
         duracionMeses,
       },
     });
-  } catch (error) {
+  } catch {
     return {
       message: 'Error de base de datos: No se pudo crear el plan.',
     };
@@ -52,7 +52,7 @@ export async function createPlan(prevState: any, formData: FormData) {
   redirect('/admin/planes');
 }
 
-export async function updatePlan(id: string, prevState: any, formData: FormData) {
+export async function updatePlan(id: string, prevState: unknown, formData: FormData) {
   const validatedFields = UpdatePlan.safeParse({
     nombre: formData.get('nombre'),
     descripcion: formData.get('descripcion'),
@@ -79,7 +79,7 @@ export async function updatePlan(id: string, prevState: any, formData: FormData)
         duracionMeses,
       },
     });
-  } catch (error) {
+  } catch {
     return { message: 'Error de base de datos: No se pudo actualizar el plan.' };
   }
 

@@ -78,7 +78,9 @@ export default async function AdminLayout({
   );
 }
 
-function NavLinks({ permissions, role }: { permissions: any, role?: string }) {
+import { Usuario } from '@prisma/client';
+
+function NavLinks({ permissions, role }: { permissions: Usuario | null, role?: string }) {
   const isAdmin = role === 'ADMIN' || role === 'admin';
   
   const links = [

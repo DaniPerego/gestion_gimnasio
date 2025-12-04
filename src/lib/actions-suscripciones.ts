@@ -14,7 +14,7 @@ const FormSchema = z.object({
 
 const CreateSuscripcion = FormSchema.omit({ id: true });
 
-export async function createSuscripcion(prevState: any, formData: FormData) {
+export async function createSuscripcion(prevState: unknown, formData: FormData) {
   const validatedFields = CreateSuscripcion.safeParse({
     socioId: formData.get('socioId'),
     planId: formData.get('planId'),
@@ -95,7 +95,7 @@ const UpdateSuscripcionSchema = z.object({
   fechaFin: z.string().min(1, 'La fecha de fin es obligatoria'),
 });
 
-export async function updateSuscripcion(id: string, prevState: any, formData: FormData) {
+export async function updateSuscripcion(id: string, prevState: unknown, formData: FormData) {
   const validatedFields = UpdateSuscripcionSchema.safeParse({
     fechaInicio: formData.get('fechaInicio'),
     fechaFin: formData.get('fechaFin'),
@@ -123,7 +123,7 @@ export async function updateSuscripcion(id: string, prevState: any, formData: Fo
         fechaFin: fechaFinDate,
       },
     });
-  } catch (error) {
+  } catch {
     return {
       message: 'Error de base de datos: No se pudo actualizar la suscripción.',
     };
