@@ -34,6 +34,7 @@ model Usuario {
   permisoConfiguracion Boolean @default(false)
   permisoUsuarios      Boolean @default(false)
   permisoTransacciones Boolean @default(false)
+  permisoProductos     Boolean @default(false) // Nuevo permiso para inventario/tienda
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -67,6 +68,7 @@ model Socio {
   
   suscripciones   Suscripcion[]
   asistencias     Asistencia[]
+  transacciones   Transaccion[]
 }
 
 model Plan {
@@ -99,15 +101,53 @@ model Suscripcion {
   updatedAt   DateTime      @updatedAt
 }
 
+// --- Tienda y Productos ---
+
+model Producto {
+  id          String   @id @default(cuid())
+  nombre      String
+  descripcion String?
+  precio      Decimal
+  stock       Int      @default(0)
+  codigo      String?  @unique // Para código de barras si se usa
+  activo      Boolean  @default(true)
+  
+  items       ItemTransaccion[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model Transaccion {
   id            String      @id @default(cuid())
-  suscripcionId String
+  tipo          String      @default("CUOTA") // 'CUOTA', 'VENTA', 'GASTO'
+  
+  // Relaciones opcionales según el tipo
+  suscripcionId String?
+  suscripcion   Suscripcion? @relation(fields: [suscripcionId], references: [id])
+  
+  // Si la venta se asocia a un socio sin ser una cuota
+  socioId       String?
+  socio         Socio?       @relation(fields: [socioId], references: [id])
+
   monto         Decimal
   fecha         DateTime    @default(now())
   metodoPago    String      // 'EFECTIVO', 'TARJETA', 'TRANSFERENCIA', etc.
   notas         String?
   
-  suscripcion   Suscripcion @relation(fields: [suscripcionId], references: [id])
+  items         ItemTransaccion[]
+}
+
+model ItemTransaccion {
+  id            String      @id @default(cuid())
+  transaccionId String
+  productoId    String
+  cantidad      Int
+  precioUnitario Decimal    // Precio al momento de la venta
+  subtotal      Decimal
+  
+  transaccion   Transaccion @relation(fields: [transaccionId], references: [id])
+  producto      Producto    @relation(fields: [productoId], references: [id])
 }
 
 model Asistencia {

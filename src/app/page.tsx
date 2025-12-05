@@ -20,7 +20,7 @@ export default function Home() {
             Administración de Gimnasios
           </h1>
           <p className="text-lg leading-8 text-gray-600 dark:text-gray-300">
-            Sistema integral White-Label para el control de socios, asistencias, pagos y reportes financieros.
+            Sistema integral para el control de socios, asistencias, pagos y reportes financieros.
           </p>
         </div>
 
