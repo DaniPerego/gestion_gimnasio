@@ -66,20 +66,23 @@ export default async function AdminLayout({
           </div>
         </Link>
         
-        <div className="flex grow flex-col space-y-2">
-          <NavLinks permissions={userPermissions} role={userPermissions?.rol} />
-          <div className="h-auto w-full grow rounded-md bg-white/10"></div>
+        <div className="flex grow flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto space-y-2">
+            <NavLinks permissions={userPermissions} role={userPermissions?.rol} />
+          </div>
           
-          <form
-            action={async () => {
-              'use server';
-              await signOut();
-            }}
-          >
-            <button className="flex h-12 w-full items-center justify-start gap-2 rounded-md bg-white/10 p-2 px-3 text-sm font-medium text-white hover:bg-white/20">
-              <div>Cerrar Sesión</div>
-            </button>
-          </form>
+          <div className="mt-2">
+            <form
+              action={async () => {
+                'use server';
+                await signOut();
+              }}
+            >
+              <button className="flex h-12 w-full items-center justify-start gap-2 rounded-md bg-white/10 p-2 px-3 text-sm font-medium text-white hover:bg-white/20">
+                <div>Cerrar Sesión</div>
+              </button>
+            </form>
+          </div>
         </div>
       </div>
       
