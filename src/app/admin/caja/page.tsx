@@ -89,7 +89,7 @@ export default async function Page() {
                         {t.tipo}
                       </span>
                     </td>
-                    <td className="px-6 py-4">{t.descripcion || '-'}</td>
+                    <td className="px-6 py-4">{t.notas || '-'}</td>
                     <td className="px-6 py-4">
                       {t.socio ? `${t.socio.nombre} ${t.socio.apellido}` : '-'}
                     </td>
