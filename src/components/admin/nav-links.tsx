@@ -17,10 +17,7 @@ export default function NavLinks({ permissions, role, onLinkClick }: NavLinksPro
     { name: 'Planes', href: '/admin/planes', show: isAdmin || (permissions?.permisoPlanes ?? false) },
     { name: 'Suscripciones', href: '/admin/suscripciones', show: isAdmin || (permissions?.permisoSuscripciones ?? false) },
     { name: 'Asistencias', href: '/admin/asistencias', show: isAdmin || (permissions?.permisoAsistencias ?? false) },
-    { name: 'Productos', href: '/admin/productos', show: isAdmin || (permissions?.permisoProductos ?? false) },
-    { name: 'Punto de Venta', href: '/admin/ventas', show: isAdmin || (permissions?.permisoProductos ?? false) },
     { name: 'Transacciones', href: '/admin/transacciones', show: isAdmin || (permissions?.permisoTransacciones ?? false) },
-    { name: 'Caja', href: '/admin/caja', show: isAdmin || (permissions?.permisoTransacciones ?? false) || (permissions?.permisoReportes ?? false) },
     { name: 'Reportes', href: '/admin/reportes', show: isAdmin || (permissions?.permisoReportes ?? false) },
     { name: 'Configuración', href: '/admin/configuracion', show: isAdmin || (permissions?.permisoConfiguracion ?? false) },
   ];
