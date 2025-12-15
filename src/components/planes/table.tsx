@@ -29,7 +29,7 @@ export default async function PlanesTable() {
                 <div className="flex w-full items-center justify-between pt-4">
                   <div>
                     <p className="text-xl font-medium">$ {Number(plan.precio).toFixed(2)}</p>
-                    <p className="text-xs text-gray-500">{plan.duracionMeses} meses</p>
+                    <p className="text-xs text-gray-500">{plan.duracionDias} días</p>
                   </div>
                   <div className="flex justify-end gap-2">
                     <Link href={`/admin/planes/${plan.id}/edit`} className="rounded-md border p-2 hover:bg-gray-100">
@@ -86,7 +86,7 @@ export default async function PlanesTable() {
                     $ {Number(plan.precio).toFixed(2)}
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
-                    {plan.duracionMeses} meses
+                    {plan.duracionDias} días
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
                     <span className={`px-2 py-1 text-xs rounded-full ${plan.activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
