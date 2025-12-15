@@ -10,7 +10,7 @@ const PlanSchema = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio'),
   descripcion: z.string().optional(),
   precio: z.coerce.number().min(0, 'El precio debe ser mayor o igual a 0'),
-  duracionMeses: z.coerce.number().int().min(1, 'La duración debe ser al menos 1 mes'),
+  duracionDias: z.coerce.number().int().min(1, 'La duración debe ser al menos 1 día'),
 });
 
 const CreatePlan = PlanSchema.omit({ id: true });
@@ -21,7 +21,7 @@ export async function createPlan(prevState: unknown, formData: FormData) {
     nombre: formData.get('nombre'),
     descripcion: formData.get('descripcion'),
     precio: formData.get('precio'),
-    duracionMeses: formData.get('duracionMeses'),
+    duracionDias: formData.get('duracionDias'),
   });
 
   if (!validatedFields.success) {
@@ -31,7 +31,7 @@ export async function createPlan(prevState: unknown, formData: FormData) {
     };
   }
 
-  const { nombre, descripcion, precio, duracionMeses } = validatedFields.data;
+  const { nombre, descripcion, precio, duracionDias } = validatedFields.data;
 
   try {
     await prisma.plan.create({
@@ -39,7 +39,7 @@ export async function createPlan(prevState: unknown, formData: FormData) {
         nombre,
         descripcion: descripcion || null,
         precio,
-        duracionMeses,
+        duracionDias,
       },
     });
   } catch {
@@ -57,7 +57,7 @@ export async function updatePlan(id: string, prevState: unknown, formData: FormD
     nombre: formData.get('nombre'),
     descripcion: formData.get('descripcion'),
     precio: formData.get('precio'),
-    duracionMeses: formData.get('duracionMeses'),
+    duracionDias: formData.get('duracionDias'),
   });
 
   if (!validatedFields.success) {
@@ -67,7 +67,7 @@ export async function updatePlan(id: string, prevState: unknown, formData: FormD
     };
   }
 
-  const { nombre, descripcion, precio, duracionMeses } = validatedFields.data;
+  const { nombre, descripcion, precio, duracionDias } = validatedFields.data;
 
   try {
     await prisma.plan.update({
@@ -76,7 +76,7 @@ export async function updatePlan(id: string, prevState: unknown, formData: FormD
         nombre,
         descripcion: descripcion || null,
         precio,
-        duracionMeses,
+        duracionDias,
       },
     });
   } catch {

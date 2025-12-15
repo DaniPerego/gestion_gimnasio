@@ -80,22 +80,22 @@ export default function Form() {
 
         {/* Duracion */}
         <div className="mb-4">
-          <label htmlFor="duracionMeses" className="mb-2 block text-sm font-medium">
-            Duración (Meses)
+          <label htmlFor="duracionDias" className="mb-2 block text-sm font-medium">
+            Duración (Días)
           </label>
           <div className="relative">
             <input
-              id="duracionMeses"
-              name="duracionMeses"
+              id="duracionDias"
+              name="duracionDias"
               type="number"
-              placeholder="1"
+              placeholder="30"
               className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
               aria-describedby="duracion-error"
             />
           </div>
           <div id="duracion-error" aria-live="polite" aria-atomic="true">
-            {state.errors?.duracionMeses &&
-              state.errors.duracionMeses.map((error: string) => (
+            {state.errors?.duracionDias &&
+              state.errors.duracionDias.map((error: string) => (
                 <p className="mt-2 text-sm text-red-500" key={error}>
                   {error}
                 </p>
