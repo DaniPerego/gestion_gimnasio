@@ -4,11 +4,12 @@
 - [x] **Arreglar Toggle de Tema:** Se agregaron logs y `type="button"` para depurar. Se verificó la configuración de Tailwind y next-themes. (Pendiente verificar si persiste el error en cliente).
 
 ## Tareas Futuras
-- [x] Continuar puliendo la interfaz visual (Dashboard admin mejorado con iconos y métricas claras).
-- [ ] Revisar feedback del despliegue en Vercel.
+- [ ] Implementar sistema de Reportes más avanzado.
+- [ ] Agregar notificaciones por email.
 
 ## Estado Actual
 - Modo Kiosco: Implementado y funcionando (ruta `/kiosco`).
 - Navegación Móvil: Implementada.
-- Modo Oscuro: Implementado (Bug corregido, pendiente verificación).
+- Modo Oscuro: Implementado (Bug corregido).
 - Dashboard: Mejorado visualmente.
+- Despliegue: Corregido error de compilación TypeScript (`duracionMeses` -> `duracionDias`).
