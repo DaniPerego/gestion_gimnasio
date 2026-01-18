@@ -35,7 +35,6 @@ export default async function Page({
         </Link>
       </div>
       <Suspense fallback={<div>Cargando...</div>}>
-         {/* @ts-expect-error Async Server Component */}
         <SociosTable query={query} currentPage={currentPage} />
       </Suspense>
       <div className="mt-5 flex w-full justify-center">
