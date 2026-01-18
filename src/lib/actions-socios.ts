@@ -19,6 +19,7 @@ const FormSchema = z.object({
   direccion: z.string().optional(),
   telefonoEmergencia: z.string().optional(),
   objetivo: z.string().optional(),
+  esLibre: z.boolean().optional(),
 });
 
 const CreateSocio = FormSchema.omit({ id: true });
@@ -38,6 +39,7 @@ export async function createSocio(prevState: any, formData: FormData) {
     telefonoEmergencia: formData.get('telefonoEmergencia'),
     condicionesMedicas: formData.get('condicionesMedicas'),
     objetivo: formData.get('objetivo'),
+    esLibre: formData.get('esLibre') === 'on',
   });
 
   if (!validatedFields.success) {
@@ -54,7 +56,7 @@ export async function createSocio(prevState: any, formData: FormData) {
 
   const { 
     nombre, apellido, dni, email, telefono,
-    fechaNacimiento, genero, direccion, contactoEmergencia, telefonoEmergencia, condicionesMedicas, objetivo
+    fechaNacimiento, genero, direccion, contactoEmergencia, telefonoEmergencia, condicionesMedicas, objetivo, esLibre
   } = validatedFields.data;
 
   try {
@@ -72,7 +74,7 @@ export async function createSocio(prevState: any, formData: FormData) {
         telefonoEmergencia: telefonoEmergencia || null,
         condicionesMedicas: condicionesMedicas || null,
         objetivo: objetivo || null,
-        esLibre: false, // O el valor por defecto que corresponda
+        esLibre: esLibre ?? false,
       },
     });
   } catch {
@@ -107,6 +109,7 @@ export async function updateSocio(id: string, prevState: unknown, formData: Form
       telefonoEmergencia: formData.get('telefonoEmergencia'),
       condicionesMedicas: formData.get('condicionesMedicas'),
       objetivo: formData.get('objetivo'),
+      esLibre: formData.get('esLibre') === 'on',
     });
   
     if (!validatedFields.success) {
@@ -118,7 +121,7 @@ export async function updateSocio(id: string, prevState: unknown, formData: Form
   
     const { 
       nombre, apellido, dni, email, telefono,
-      fechaNacimiento, genero, direccion, contactoEmergencia, telefonoEmergencia, condicionesMedicas, objetivo
+      fechaNacimiento, genero, direccion, contactoEmergencia, telefonoEmergencia, condicionesMedicas, objetivo, esLibre
     } = validatedFields.data;
   
     try {
@@ -137,7 +140,7 @@ export async function updateSocio(id: string, prevState: unknown, formData: Form
           telefonoEmergencia: telefonoEmergencia || null,
           condicionesMedicas: condicionesMedicas || null,
           objetivo: objetivo || null,
-          esLibre: false, // O el valor por defecto que corresponda
+          esLibre: esLibre ?? false,
         },
       });
     } catch {

@@ -304,7 +304,7 @@ export default function Form() {
               id="esLibre"
               name="esLibre"
               type="checkbox"
-              defaultChecked={state.values?.esLibre === true}
+              defaultChecked={state.values?.esLibre === 'on'}
               className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             <label htmlFor="esLibre" className="ml-2 block text-sm font-medium text-gray-900">
