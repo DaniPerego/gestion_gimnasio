@@ -10,32 +10,52 @@ const FormSchema = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio'),
   apellido: z.string().min(1, 'El apellido es obligatorio'),
   dni: z.string().min(1, 'El DNI es obligatorio'),
+  contactoEmergencia: z.string().min(1, 'El contacto de emergencia es obligatorio'),
+  condicionesMedicas: z.string().min(1, 'Las condiciones médicas son obligatorias'),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   telefono: z.string().optional(),
-  esLibre: z.string().optional(), // Checkbox returns "on" or undefined
+  fechaNacimiento: z.string().optional(),
+  genero: z.string().optional(),
+  direccion: z.string().optional(),
+  telefonoEmergencia: z.string().optional(),
+  objetivo: z.string().optional(),
 });
 
 const CreateSocio = FormSchema.omit({ id: true });
 const UpdateSocio = FormSchema.omit({ id: true });
 
-export async function createSocio(prevState: unknown, formData: FormData) {
+export async function createSocio(prevState: any, formData: FormData) {
   const validatedFields = CreateSocio.safeParse({
     nombre: formData.get('nombre'),
     apellido: formData.get('apellido'),
     dni: formData.get('dni'),
     email: formData.get('email'),
     telefono: formData.get('telefono'),
-    esLibre: formData.get('esLibre'),
+    fechaNacimiento: formData.get('fechaNacimiento'),
+    genero: formData.get('genero'),
+    direccion: formData.get('direccion'),
+    contactoEmergencia: formData.get('contactoEmergencia'),
+    telefonoEmergencia: formData.get('telefonoEmergencia'),
+    condicionesMedicas: formData.get('condicionesMedicas'),
+    objetivo: formData.get('objetivo'),
   });
 
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
       message: 'Faltan campos obligatorios. Error al crear socio.',
+      values: Object.fromEntries(
+        Array.from(formData.entries()).map(([key, value]) => [
+          key, value.toString()
+        ])
+      ),
     };
   }
 
-  const { nombre, apellido, dni, email, telefono, esLibre } = validatedFields.data;
+  const { 
+    nombre, apellido, dni, email, telefono,
+    fechaNacimiento, genero, direccion, contactoEmergencia, telefonoEmergencia, condicionesMedicas, objetivo
+  } = validatedFields.data;
 
   try {
     await prisma.socio.create({
@@ -45,17 +65,32 @@ export async function createSocio(prevState: unknown, formData: FormData) {
         dni,
         email: email || null,
         telefono: telefono || null,
-        esLibre: esLibre === 'on',
+        fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : null,
+        genero: genero || null,
+        direccion: direccion || null,
+        contactoEmergencia: contactoEmergencia || null,
+        telefonoEmergencia: telefonoEmergencia || null,
+        condicionesMedicas: condicionesMedicas || null,
+        objetivo: objetivo || null,
+        esLibre: false, // O el valor por defecto que corresponda
       },
     });
   } catch {
     return {
       message: 'Error de base de datos: No se pudo crear el socio (posible DNI duplicado).',
+      errors: {},
+      values: Object.fromEntries(
+        Array.from(formData.entries()).map(([key, value]) => [
+          key, value.toString()
+        ])
+      ),
     };
   }
 
+  // En caso de éxito, redirigir
   revalidatePath('/admin/socios');
   redirect('/admin/socios');
+
 }
 
 export async function updateSocio(id: string, prevState: unknown, formData: FormData) {
@@ -65,7 +100,13 @@ export async function updateSocio(id: string, prevState: unknown, formData: Form
       dni: formData.get('dni'),
       email: formData.get('email'),
       telefono: formData.get('telefono'),
-      esLibre: formData.get('esLibre'),
+      fechaNacimiento: formData.get('fechaNacimiento'),
+      genero: formData.get('genero'),
+      direccion: formData.get('direccion'),
+      contactoEmergencia: formData.get('contactoEmergencia'),
+      telefonoEmergencia: formData.get('telefonoEmergencia'),
+      condicionesMedicas: formData.get('condicionesMedicas'),
+      objetivo: formData.get('objetivo'),
     });
   
     if (!validatedFields.success) {
@@ -75,7 +116,10 @@ export async function updateSocio(id: string, prevState: unknown, formData: Form
       };
     }
   
-    const { nombre, apellido, dni, email, telefono, esLibre } = validatedFields.data;
+    const { 
+      nombre, apellido, dni, email, telefono,
+      fechaNacimiento, genero, direccion, contactoEmergencia, telefonoEmergencia, condicionesMedicas, objetivo
+    } = validatedFields.data;
   
     try {
       await prisma.socio.update({
@@ -86,13 +130,20 @@ export async function updateSocio(id: string, prevState: unknown, formData: Form
           dni,
           email: email || null,
           telefono: telefono || null,
-          esLibre: esLibre === 'on',
+          fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : null,
+          genero: genero || null,
+          direccion: direccion || null,
+          contactoEmergencia: contactoEmergencia || null,
+          telefonoEmergencia: telefonoEmergencia || null,
+          condicionesMedicas: condicionesMedicas || null,
+          objetivo: objetivo || null,
+          esLibre: false, // O el valor por defecto que corresponda
         },
       });
     } catch {
       return { message: 'Error de base de datos: No se pudo actualizar el socio.' };
     }
-  
+
     revalidatePath('/admin/socios');
     redirect('/admin/socios');
   }

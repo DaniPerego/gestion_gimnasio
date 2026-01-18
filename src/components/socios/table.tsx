@@ -25,9 +25,14 @@ export default async function SociosTable({
                 <div className="flex items-center justify-between border-b pb-4">
                   <div>
                     <div className="mb-2 flex items-center">
-                      <p>{socio.nombre} {socio.apellido}</p>
+                      <p className="font-medium">{socio.nombre} {socio.apellido}</p>
                     </div>
                     <p className="text-sm text-gray-500">{socio.email}</p>
+                    {socio.esLibre && (
+                         <span className="mt-1 inline-flex items-center rounded-md bg-purple-100 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">
+                           Socio Libre
+                         </span>
+                    )}
                   </div>
                   <div className={`px-2 py-1 text-xs rounded-full ${socio.activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                     {socio.activo ? 'Activo' : 'Inactivo'}
@@ -36,6 +41,7 @@ export default async function SociosTable({
                 <div className="flex w-full items-center justify-between pt-4">
                   <div>
                     <p className="text-xl font-medium">{socio.dni}</p>
+                    <p className="text-sm text-gray-500">{socio.telefono}</p>
                   </div>
                   <div className="flex justify-end gap-2">
                     <WhatsAppButton telefono={socio.telefono} nombre={socio.nombre} />
@@ -62,7 +68,7 @@ export default async function SociosTable({
                   DNI
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
-                  Email
+                  Contacto
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
                   Estado
@@ -79,15 +85,23 @@ export default async function SociosTable({
                   className="w-full border-b py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
                 >
                   <td className="whitespace-nowrap py-3 pl-6 pr-3">
-                    <div className="flex items-center gap-3">
-                      <p>{socio.nombre} {socio.apellido}</p>
+                    <div className="flex flex-col">
+                      <p className="font-medium">{socio.nombre} {socio.apellido}</p>
+                      {socio.esLibre && (
+                         <span className="mt-1 w-fit rounded-md bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">
+                           Socio Libre
+                         </span>
+                      )}
                     </div>
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
                     {socio.dni}
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
-                    {socio.email}
+                    <div className="flex flex-col text-sm text-gray-500">
+                        <span>{socio.telefono}</span>
+                        <span>{socio.email}</span>
+                    </div>
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
                     <span className={`px-2 py-1 text-xs rounded-full ${socio.activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -100,7 +114,7 @@ export default async function SociosTable({
                         <Link href={`/admin/socios/${socio.id}/edit`} className="rounded-md border p-2 hover:bg-gray-100">
                             ✏️
                         </Link>
-                        <form action={deleteSocio.bind(null, socio.id)}>
+                         <form action={deleteSocio.bind(null, socio.id)}>
                             <button className="rounded-md border p-2 hover:bg-gray-100 text-red-600">
                                 🗑️
                             </button>

@@ -1,102 +1,93 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("PRISMA_DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("PRISMA_DATABASE_URL")
   directUrl = env("POSTGRES_URL")
 }
 
-// --- Autenticación y Administración ---
-
-// enum Rol {
-//   ADMIN
-//   RECEPCIONISTA
-// }
-
 model Usuario {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  nombre    String
-  rol       String   @default("RECEPCIONISTA") // SQLite no soporta enums
-  
-  // Permisos Granulares
-  permisoSocios        Boolean @default(true)
-  permisoPlanes        Boolean @default(false)
-  permisoSuscripciones Boolean @default(true)
-  permisoAsistencias   Boolean @default(true)
-  permisoReportes      Boolean @default(false)
-  permisoConfiguracion Boolean @default(false)
-  permisoUsuarios      Boolean @default(false)
-  permisoTransacciones Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  email                 String   @unique
+  password              String
+  nombre                String
+  rol                   String   @default("RECEPCIONISTA")
+  permisoSocios         Boolean  @default(true)
+  permisoPlanes         Boolean  @default(false)
+  permisoSuscripciones  Boolean  @default(true)
+  permisoAsistencias    Boolean  @default(true)
+  permisoReportes       Boolean  @default(false)
+  permisoConfiguracion  Boolean  @default(false)
+  permisoUsuarios       Boolean  @default(false)
+  permisoTransacciones  Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  esProfesorCrossfit    Boolean  @default(false)
+  esProfesorMusculacion Boolean  @default(false)
 }
-
-// --- Configuración White-Label ---
 
 model Configuracion {
   id              String   @id @default(cuid())
   nombreGimnasio  String   @default("Mi Gimnasio")
-  colorPrimario   String   @default("#000000") // Hex color
-  colorSecundario String   @default("#ffffff") // Hex color
+  colorPrimario   String   @default("#000000")
+  colorSecundario String   @default("#ffffff")
   logoUrl         String?
+  fondoUrl        String?
   updatedAt       DateTime @updatedAt
 }
 
-// --- Negocio Core ---
-
 model Socio {
-  id              String        @id @default(cuid())
-  nombre          String
-  apellido        String
-  dni             String        @unique
-  email           String?
-  telefono        String?
-  fechaNacimiento DateTime?
-  activo          Boolean       @default(true)
-  esLibre         Boolean       @default(false)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  
-  suscripciones   Suscripcion[]
-  asistencias     Asistencia[]
+  id                 String        @id @default(cuid())
+  nombre             String
+  apellido           String
+  dni                String        @unique
+  email              String?
+  telefono           String?
+  fechaNacimiento    DateTime?
+  genero             String?
+  direccion          String?
+  fotoUrl            String?
+  contactoEmergencia String?
+  telefonoEmergencia String?
+  condicionesMedicas String?
+  objetivo           String?
+  activo             Boolean       @default(true)
+  esLibre            Boolean       @default(false)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  cuentaCorriente    Json?
+  asistencias        Asistencia[]
+  suscripciones      Suscripcion[]
 }
 
 model Plan {
-  id            String        @id @default(cuid())
-  nombre        String
-  descripcion   String?
-  precio        Decimal
-  duracionMeses Int
-  activo        Boolean       @default(true)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  
-  suscripciones Suscripcion[]
+  id                String        @id @default(cuid())
+  nombre            String
+  descripcion       String?
+  precio            Decimal
+  duracionMeses     Int
+  activo            Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  allowsCrossfit    Boolean       @default(false)
+  allowsMusculacion Boolean       @default(false)
+  suscripciones     Suscripcion[]
 }
 
 model Suscripcion {
-  id          String        @id @default(cuid())
-  socioId     String
-  planId      String
-  fechaInicio DateTime      @default(now())
-  fechaFin    DateTime
-  activa      Boolean       @default(true)
-  
-  socio       Socio         @relation(fields: [socioId], references: [id])
-  plan        Plan          @relation(fields: [planId], references: [id])
-  
+  id            String        @id @default(cuid())
+  socioId       String
+  planId        String
+  fechaInicio   DateTime      @default(now())
+  fechaFin      DateTime
+  activa        Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  plan          Plan          @relation(fields: [planId], references: [id])
+  socio         Socio         @relation(fields: [socioId], references: [id])
   transacciones Transaccion[]
-  
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
 }
 
 model Transaccion {
@@ -104,16 +95,14 @@ model Transaccion {
   suscripcionId String
   monto         Decimal
   fecha         DateTime    @default(now())
-  metodoPago    String      // 'EFECTIVO', 'TARJETA', 'TRANSFERENCIA', etc.
+  metodoPago    String
   notas         String?
-  
   suscripcion   Suscripcion @relation(fields: [suscripcionId], references: [id])
 }
 
 model Asistencia {
-  id        String   @id @default(cuid())
-  socioId   String
-  fecha     DateTime @default(now())
-  
-  socio     Socio    @relation(fields: [socioId], references: [id])
+  id      String   @id @default(cuid())
+  socioId String
+  fecha   DateTime @default(now())
+  socio   Socio    @relation(fields: [socioId], references: [id])
 }
