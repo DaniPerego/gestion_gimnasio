@@ -134,6 +134,153 @@ export default function EditForm({ socio }: { socio: Socio }) {
           </div>
         </div>
 
+        {/* Fecha de Nacimiento */}
+        <div className="mb-4">
+          <label htmlFor="fechaNacimiento" className="mb-2 block text-sm font-medium">
+            Fecha de Nacimiento
+          </label>
+          <div className="relative">
+            <input
+              id="fechaNacimiento"
+              name="fechaNacimiento"
+              type="date"
+              defaultValue={socio.fechaNacimiento ? new Date(socio.fechaNacimiento).toISOString().split('T')[0] : ''}
+              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2"
+            />
+          </div>
+        </div>
+
+        {/* Género */}
+        <div className="mb-4">
+          <label htmlFor="genero" className="mb-2 block text-sm font-medium">
+            Género
+          </label>
+          <div className="relative">
+            <select
+              id="genero"
+              name="genero"
+              defaultValue={socio.genero || ''}
+              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2"
+            >
+              <option value="">Seleccione...</option>
+              <option value="Masculino">Masculino</option>
+              <option value="Femenino">Femenino</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Dirección */}
+        <div className="mb-4">
+          <label htmlFor="direccion" className="mb-2 block text-sm font-medium">
+            Dirección
+          </label>
+          <div className="relative">
+            <input
+              id="direccion"
+              name="direccion"
+              type="text"
+              defaultValue={socio.direccion || ''}
+              placeholder="Ingrese la dirección"
+              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+            />
+          </div>
+        </div>
+
+        <hr className="my-6 border-gray-200" />
+        <h3 className="mb-4 text-lg font-medium text-gray-900">Datos de Emergencia</h3>
+
+        {/* Contacto Emergencia */}
+        <div className="mb-4">
+          <label htmlFor="contactoEmergencia" className="mb-2 block text-sm font-medium">
+            Nombre Contacto Emergencia <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <input
+              id="contactoEmergencia"
+              name="contactoEmergencia"
+              type="text"
+              defaultValue={socio.contactoEmergencia || ''}
+              placeholder="Nombre de familiar o amigo"
+              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+              required
+            />
+          </div>
+        </div>
+
+        {/* Teléfono Emergencia */}
+        <div className="mb-4">
+          <label htmlFor="telefonoEmergencia" className="mb-2 block text-sm font-medium">
+            Teléfono Emergencia
+          </label>
+          <div className="relative">
+            <input
+              id="telefonoEmergencia"
+              name="telefonoEmergencia"
+              type="text"
+              defaultValue={socio.telefonoEmergencia || ''}
+              placeholder="Teléfono de emergencia"
+              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+            />
+          </div>
+        </div>
+
+        <hr className="my-6 border-gray-200" />
+        <h3 className="mb-4 text-lg font-medium text-gray-900">Salud y Objetivos</h3>
+
+        {/* Condiciones Médicas */}
+        <div className="mb-4">
+          <label htmlFor="condicionesMedicas" className="mb-2 block text-sm font-medium">
+            Condiciones Médicas / Alergias <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <textarea
+              id="condicionesMedicas"
+              name="condicionesMedicas"
+              defaultValue={socio.condicionesMedicas || ''}
+              placeholder="Describa condiciones médicas relevantes o escriba 'Ninguna'"
+              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+              rows={3}
+              required
+            />
+          </div>
+        </div>
+
+        {/* Objetivo */}
+        <div className="mb-4">
+          <label htmlFor="objetivo" className="mb-2 block text-sm font-medium">
+            Objetivo Principal
+          </label>
+          <div className="relative">
+            <input
+              id="objetivo"
+              name="objetivo"
+              type="text"
+              defaultValue={socio.objetivo || ''}
+              placeholder="Ej: Bajar de peso, Ganar masa muscular..."
+              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+            />
+          </div>
+        </div>
+
+        <hr className="my-6 border-gray-200" />
+
+        {/* Es Libre */}
+        <div className="mb-4">
+          <div className="flex items-center">
+            <input
+              id="esLibre"
+              name="esLibre"
+              type="checkbox"
+              defaultChecked={socio.esLibre || false}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label htmlFor="esLibre" className="ml-2 block text-sm text-gray-900">
+              Socio Libre (acceso sin vencimiento)
+            </label>
+          </div>
+        </div>
+
 
         <div aria-live="polite" aria-atomic="true">
             {state.message && (

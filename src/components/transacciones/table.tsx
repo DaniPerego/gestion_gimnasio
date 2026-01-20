@@ -1,4 +1,6 @@
 import { fetchTransacciones } from '@/lib/data-transacciones';
+import VerTicketButton from './ver-ticket-button';
+import { fetchConfiguracion } from '@/lib/data';
 
 export default async function TransaccionesTable({
   query,
@@ -8,6 +10,7 @@ export default async function TransaccionesTable({
   currentPage: number;
 }) {
   const transacciones = await fetchTransacciones(query, currentPage);
+  const config = await fetchConfiguracion();
 
   return (
     <div className="mt-6 flow-root">
@@ -60,6 +63,9 @@ export default async function TransaccionesTable({
                 <th scope="col" className="px-3 py-5 font-medium">
                   Notas
                 </th>
+                <th scope="col" className="px-3 py-5 font-medium">
+                  Acciones
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white">
@@ -88,6 +94,23 @@ export default async function TransaccionesTable({
                   </td>
                   <td className="px-3 py-3 text-sm text-gray-500">
                     {transaccion.notas || '-'}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3">
+                    <div className="flex justify-center gap-3">
+                      <VerTicketButton 
+                        ticketData={{
+                          id: transaccion.id,
+                          socioNombre: `${transaccion.suscripcion.socio.nombre} ${transaccion.suscripcion.socio.apellido}`,
+                          planNombre: transaccion.suscripcion.plan.nombre,
+                          monto: Number(transaccion.monto),
+                          fecha: transaccion.fecha,
+                          metodoPago: transaccion.metodoPago,
+                          notas: transaccion.notas,
+                          telefonoSocio: transaccion.suscripcion.socio.telefono,
+                        }}
+                        logoUrl={config?.logoUrl || undefined}
+                      />
+                    </div>
                   </td>
                 </tr>
               ))}

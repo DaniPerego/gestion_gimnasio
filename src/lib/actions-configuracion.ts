@@ -8,6 +8,7 @@ const ConfigSchema = z.object({
   nombreGimnasio: z.string().min(1, 'El nombre es obligatorio'),
   colorPrimario: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i, 'Color inválido (Hex)'),
   colorSecundario: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i, 'Color inválido (Hex)'),
+  fondoUrl: z.string().optional(),
 });
 
 export async function updateConfiguracion(prevState: unknown, formData: FormData) {
@@ -15,6 +16,7 @@ export async function updateConfiguracion(prevState: unknown, formData: FormData
     nombreGimnasio: formData.get('nombreGimnasio'),
     colorPrimario: formData.get('colorPrimario'),
     colorSecundario: formData.get('colorSecundario'),
+    fondoUrl: formData.get('fondoUrl'),
   });
 
   if (!validatedFields.success) {
@@ -24,7 +26,7 @@ export async function updateConfiguracion(prevState: unknown, formData: FormData
     };
   }
 
-  const { nombreGimnasio, colorPrimario, colorSecundario } = validatedFields.data;
+  const { nombreGimnasio, colorPrimario, colorSecundario, fondoUrl } = validatedFields.data;
 
   try {
     // Buscamos la primera configuración existente para actualizarla
@@ -37,6 +39,7 @@ export async function updateConfiguracion(prevState: unknown, formData: FormData
           nombreGimnasio,
           colorPrimario,
           colorSecundario,
+          fondoUrl,
         },
       });
     } else {
@@ -46,6 +49,7 @@ export async function updateConfiguracion(prevState: unknown, formData: FormData
           nombreGimnasio,
           colorPrimario,
           colorSecundario,
+          fondoUrl,
         },
       });
     }
