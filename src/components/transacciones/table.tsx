@@ -1,6 +1,6 @@
 import { fetchTransacciones } from '@/lib/data-transacciones';
 import VerTicketButton from './ver-ticket-button';
-import { fetchConfiguracion } from '@/lib/data';
+import { getConfiguracion } from '@/lib/data';
 
 export default async function TransaccionesTable({
   query,
@@ -10,7 +10,7 @@ export default async function TransaccionesTable({
   currentPage: number;
 }) {
   const transacciones = await fetchTransacciones(query, currentPage);
-  const config = await fetchConfiguracion();
+  const config = await getConfiguracion();
 
   return (
     <div className="mt-6 flow-root">
