@@ -13,8 +13,8 @@ export async function fetchUsuarios(query: string, currentPage: number) {
       take: ITEMS_PER_PAGE,
       where: {
         OR: [
-          { nombre: { contains: query, mode: 'insensitive' } },
-          { email: { contains: query, mode: 'insensitive' } },
+          { nombre: { contains: query } },
+          { email: { contains: query } },
         ],
       },
       orderBy: {
@@ -34,8 +34,8 @@ export async function fetchUsuariosPages(query: string) {
     const count = await prisma.usuario.count({
       where: {
         OR: [
-          { nombre: { contains: query, mode: 'insensitive' } },
-          { email: { contains: query, mode: 'insensitive' } },
+          { nombre: { contains: query } },
+          { email: { contains: query } },
         ],
       },
     });
