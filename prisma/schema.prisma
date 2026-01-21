@@ -3,9 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider  = "sqlite"
   url       = env("PRISMA_DATABASE_URL")
-  directUrl = env("POSTGRES_URL")
+  // directUrl = env("POSTGRES_URL") // No necesario para SQLite
 }
 
 model Usuario {
@@ -57,7 +57,7 @@ model Socio {
   esLibre            Boolean       @default(false)
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
-  cuentaCorriente    Json?
+  cuentaCorriente    String? // SQLite no soporta Json
   asistencias        Asistencia[]
   suscripciones      Suscripcion[]
 }
