@@ -28,10 +28,17 @@ function sanitizeData(data: any[], modelName: keyof typeof VALID_FIELDS): any[] 
 
 // Función para procesar socios con campos requeridos faltantes
 function processSocios(socios: any[]): any[] {
+  const validFields = VALID_FIELDS.socio;
   let dniCounter = 10000000; // Contador para DNI automático
   
   return socios.map((socio) => {
-    const sanitized = { ...socio };
+    // Primero filtrar solo campos válidos
+    const sanitized: any = {};
+    validFields.forEach((field) => {
+      if (field in socio) {
+        sanitized[field] = socio[field];
+      }
+    });
     
     // Generar apellido si falta
     if (!sanitized.apellido || sanitized.apellido.trim() === '') {
