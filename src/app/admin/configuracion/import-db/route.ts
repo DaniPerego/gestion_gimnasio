@@ -1,6 +1,31 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
+// Campos válidos por modelo
+const VALID_FIELDS = {
+  configuracion: ['nombreGimnasio', 'colorPrimario', 'colorSecundario', 'logoUrl', 'fondoUrl'],
+  usuario: ['email', 'password', 'nombre', 'rol', 'permisoSocios', 'permisoPlanes', 'permisoSuscripciones', 'permisoAsistencias', 'permisoReportes', 'permisoConfiguracion', 'permisoUsuarios', 'permisoTransacciones', 'createdAt', 'updatedAt'],
+  plan: ['nombre', 'precio', 'duracionMeses', 'descripcion', 'allowsMusculacion', 'allowsCrossfit', 'createdAt', 'updatedAt'],
+  socio: ['nombre', 'email', 'telefono', 'fechaRegistro', 'estado', 'fechaNacimiento', 'genero', 'direccion', 'contactoEmergencia', 'telefonoEmergencia', 'condicionesMedicas', 'objetivo', 'esLibre', 'createdAt', 'updatedAt'],
+  suscripcion: ['socioId', 'planId', 'fechaInicio', 'fechaFin', 'estado', 'monto', 'createdAt', 'updatedAt'],
+  transaccion: ['socioId', 'monto', 'tipo', 'metodo', 'descripcion', 'fecha', 'notas', 'createdAt', 'updatedAt'],
+  asistencia: ['socioId', 'fecha', 'hora', 'disciplina', 'createdAt', 'updatedAt'],
+};
+
+// Función para sanitizar datos
+function sanitizeData(data: any[], modelName: keyof typeof VALID_FIELDS): any[] {
+  const validFields = VALID_FIELDS[modelName];
+  return data.map((item) => {
+    const sanitized: any = {};
+    validFields.forEach((field) => {
+      if (field in item) {
+        sanitized[field] = item[field];
+      }
+    });
+    return sanitized;
+  });
+}
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
@@ -55,7 +80,7 @@ export async function POST(request: Request) {
     try {
       // 1. Configuración (sin dependencias)
       if (Array.isArray(data.configuracion) && data.configuracion.length > 0) {
-        const cleanData = data.configuracion.map(({ id, ...rest }: any) => rest);
+        const cleanData = sanitizeData(data.configuracion, 'configuracion').map(({ id, ...rest }: any) => rest);
         const result = await prisma.configuracion.createMany({
           data: cleanData,
           skipDuplicates: true,
@@ -65,7 +90,7 @@ export async function POST(request: Request) {
 
       // 2. Usuarios (sin dependencias)
       if (Array.isArray(data.usuarios) && data.usuarios.length > 0) {
-        const cleanData = data.usuarios.map(({ id, ...rest }: any) => rest);
+        const cleanData = sanitizeData(data.usuarios, 'usuario').map(({ id, ...rest }: any) => rest);
         const result = await prisma.usuario.createMany({
           data: cleanData,
           skipDuplicates: true,
@@ -75,7 +100,7 @@ export async function POST(request: Request) {
 
       // 3. Planes (sin dependencias)
       if (Array.isArray(data.planes) && data.planes.length > 0) {
-        const cleanData = data.planes.map(({ id, ...rest }: any) => rest);
+        const cleanData = sanitizeData(data.planes, 'plan').map(({ id, ...rest }: any) => rest);
         const result = await prisma.plan.createMany({
           data: cleanData,
           skipDuplicates: true,
@@ -85,7 +110,7 @@ export async function POST(request: Request) {
 
       // 4. Socios (sin dependencias de BD, pero sí validar)
       if (Array.isArray(data.socios) && data.socios.length > 0) {
-        const cleanData = data.socios.map(({ id, ...rest }: any) => rest);
+        const cleanData = sanitizeData(data.socios, 'socio').map(({ id, ...rest }: any) => rest);
         const result = await prisma.socio.createMany({
           data: cleanData,
           skipDuplicates: true,
@@ -95,7 +120,7 @@ export async function POST(request: Request) {
 
       // 5. Suscripciones (depende de socios y planes)
       if (Array.isArray(data.suscripciones) && data.suscripciones.length > 0) {
-        const cleanData = data.suscripciones.map(({ id, ...rest }: any) => rest);
+        const cleanData = sanitizeData(data.suscripciones, 'suscripcion').map(({ id, ...rest }: any) => rest);
         const result = await prisma.suscripcion.createMany({
           data: cleanData,
           skipDuplicates: true,
@@ -105,7 +130,7 @@ export async function POST(request: Request) {
 
       // 6. Transacciones (depende de socios)
       if (Array.isArray(data.transacciones) && data.transacciones.length > 0) {
-        const cleanData = data.transacciones.map(({ id, ...rest }: any) => rest);
+        const cleanData = sanitizeData(data.transacciones, 'transaccion').map(({ id, ...rest }: any) => rest);
         const result = await prisma.transaccion.createMany({
           data: cleanData,
           skipDuplicates: true,
@@ -115,7 +140,7 @@ export async function POST(request: Request) {
 
       // 7. Asistencias (depende de socios)
       if (Array.isArray(data.asistencias) && data.asistencias.length > 0) {
-        const cleanData = data.asistencias.map(({ id, ...rest }: any) => rest);
+        const cleanData = sanitizeData(data.asistencias, 'asistencia').map(({ id, ...rest }: any) => rest);
         const result = await prisma.asistencia.createMany({
           data: cleanData,
           skipDuplicates: true,
