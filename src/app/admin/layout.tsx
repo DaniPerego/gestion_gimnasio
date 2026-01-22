@@ -25,6 +25,7 @@ export default async function AdminLayout({
   const primaryColor = config?.colorPrimario || '#2563eb'; // blue-600
   const secondaryColor = config?.colorSecundario || '#1e40af'; // blue-800
   const nombreGimnasio = config?.nombreGimnasio || 'GMS White-Label';
+  const bgImage = config?.fondoUrl || null;
 
   return (
     <div className="flex h-screen flex-col md:flex-row md:overflow-hidden">
@@ -87,7 +88,15 @@ export default async function AdminLayout({
       </div>
       
       {/* Contenido Principal */}
-      <div className="grow p-6 md:overflow-y-auto md:p-12 bg-gray-50 dark:bg-gray-900 transition-colors">
+      <div 
+        className="grow p-6 md:overflow-y-auto md:p-12 bg-gray-50 dark:bg-gray-900 transition-colors relative"
+        style={bgImage ? { backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' } : undefined}
+      >
+        {/* Overlay para mejorar legibilidad si hay imagen */}
+        {bgImage && (
+          <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/30 to-black/40 dark:from-black/60 dark:via-black/50 dark:to-black/60 pointer-events-none"></div>
+        )}
+        <div className="relative z-10 space-y-8">
         <header className="mb-8 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Panel de Administración</h2>
             <div className="flex items-center gap-4">
@@ -98,6 +107,7 @@ export default async function AdminLayout({
             </div>
         </header>
         {children}
+        </div>
       </div>
     </div>
   );
