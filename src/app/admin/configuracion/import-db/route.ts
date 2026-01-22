@@ -6,7 +6,7 @@ const VALID_FIELDS = {
   configuracion: ['nombreGimnasio', 'colorPrimario', 'colorSecundario', 'logoUrl', 'fondoUrl'],
   usuario: ['email', 'password', 'nombre', 'rol', 'permisoSocios', 'permisoPlanes', 'permisoSuscripciones', 'permisoAsistencias', 'permisoReportes', 'permisoConfiguracion', 'permisoUsuarios', 'permisoTransacciones', 'createdAt', 'updatedAt'],
   plan: ['nombre', 'precio', 'duracionMeses', 'descripcion', 'allowsMusculacion', 'allowsCrossfit', 'createdAt', 'updatedAt'],
-  socio: ['nombre', 'email', 'telefono', 'fechaRegistro', 'estado', 'fechaNacimiento', 'genero', 'direccion', 'contactoEmergencia', 'telefonoEmergencia', 'condicionesMedicas', 'objetivo', 'esLibre', 'createdAt', 'updatedAt'],
+  socio: ['nombre', 'apellido', 'dni', 'email', 'telefono', 'fechaNacimiento', 'genero', 'direccion', 'contactoEmergencia', 'telefonoEmergencia', 'condicionesMedicas', 'objetivo', 'esLibre', 'activo', 'createdAt', 'updatedAt'],
   suscripcion: ['socioId', 'planId', 'fechaInicio', 'fechaFin', 'estado', 'monto', 'createdAt', 'updatedAt'],
   transaccion: ['socioId', 'monto', 'tipo', 'metodo', 'descripcion', 'fecha', 'notas', 'createdAt', 'updatedAt'],
   asistencia: ['socioId', 'fecha', 'hora', 'disciplina', 'createdAt', 'updatedAt'],
@@ -22,6 +22,38 @@ function sanitizeData(data: any[], modelName: keyof typeof VALID_FIELDS): any[] 
         sanitized[field] = item[field];
       }
     });
+    return sanitized;
+  });
+}
+
+// Función para procesar socios con campos requeridos faltantes
+function processSocios(socios: any[]): any[] {
+  let dniCounter = 10000000; // Contador para DNI automático
+  
+  return socios.map((socio) => {
+    const sanitized = { ...socio };
+    
+    // Generar apellido si falta
+    if (!sanitized.apellido || sanitized.apellido.trim() === '') {
+      // Intentar extraer del nombre (si hay espacio)
+      const nombreParts = (sanitized.nombre || '').trim().split(' ');
+      if (nombreParts.length > 1) {
+        sanitized.apellido = nombreParts[nombreParts.length - 1];
+      } else {
+        sanitized.apellido = 'S/A'; // Sin Apellido
+      }
+    }
+    
+    // Generar DNI único si falta
+    if (!sanitized.dni || sanitized.dni.trim() === '') {
+      sanitized.dni = `AUTO-${dniCounter++}`;
+    }
+    
+    // Asegurar que activo exista
+    if (!('activo' in sanitized)) {
+      sanitized.activo = true;
+    }
+    
     return sanitized;
   });
 }
@@ -108,9 +140,9 @@ export async function POST(request: Request) {
         importedCount.planes = result.count;
       }
 
-      // 4. Socios (sin dependencias de BD, pero sí validar)
+      // 4. Socios (procesar con campos requeridos)
       if (Array.isArray(data.socios) && data.socios.length > 0) {
-        const cleanData = sanitizeData(data.socios, 'socio').map(({ id, ...rest }: any) => rest);
+        const cleanData = processSocios(data.socios).map(({ id, ...rest }: any) => rest);
         const result = await prisma.socio.createMany({
           data: cleanData,
           skipDuplicates: true,
