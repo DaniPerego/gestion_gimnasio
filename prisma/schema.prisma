@@ -72,8 +72,9 @@ model Socio {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
   
-  suscripciones   Suscripcion[]
-  asistencias     Asistencia[]
+  suscripciones       Suscripcion[]
+  asistencias         Asistencia[]
+  cuentaCorriente     CuentaCorriente?
 }
 
 model Plan {
@@ -125,4 +126,40 @@ model Asistencia {
   fecha     DateTime @default(now())
   
   socio     Socio    @relation(fields: [socioId], references: [id])
+}
+
+// --- Cuenta Corriente ---
+
+model CuentaCorriente {
+  id              String      @id @default(cuid())
+  socioId         String      @unique
+  saldoDeuda      Decimal     @default(0) // Monto adeudado (positivo)
+  saldoCredito    Decimal     @default(0) // Monto a favor (positivo)
+  
+  descripcion     String?
+  estado          String      @default("ACTIVO") // ACTIVO, SALDADO, CERRADO
+  
+  socio           Socio       @relation(fields: [socioId], references: [id], onDelete: Cascade)
+  movimientos     MovimientoCuentaCorriente[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([socioId])
+}
+
+model MovimientoCuentaCorriente {
+  id                  String      @id @default(cuid())
+  cuentaCorrienteId   String
+  transaccionId       String?
+  
+  tipo                String      // "DEUDA", "CREDITO", "PAGO", "AJUSTE"
+  monto               Decimal
+  descripcion         String
+  
+  cuentaCorriente     CuentaCorriente @relation(fields: [cuentaCorrienteId], references: [id], onDelete: Cascade)
+  
+  createdAt           DateTime    @default(now())
+  
+  @@index([cuentaCorrienteId])
 }
