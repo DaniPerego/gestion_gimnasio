@@ -13,9 +13,10 @@ export async function fetchSuscripciones(query: string, currentPage: number) {
       take: ITEMS_PER_PAGE,
       where: {
         OR: [
-          { socio: { nombre: { contains: query } } },
-          { socio: { apellido: { contains: query } } },
-          { socio: { dni: { contains: query } } },
+          { socio: { nombre: { contains: query, mode: 'insensitive' } } },
+          { socio: { apellido: { contains: query, mode: 'insensitive' } } },
+          { socio: { dni: { contains: query, mode: 'insensitive' } } },
+          { plan: { nombre: { contains: query, mode: 'insensitive' } } },
         ],
       },
       include: {
@@ -47,9 +48,10 @@ export async function fetchSuscripcionesPages(query: string) {
     const count = await prisma.suscripcion.count({
       where: {
         OR: [
-          { socio: { nombre: { contains: query } } },
-          { socio: { apellido: { contains: query } } },
-          { socio: { dni: { contains: query } } },
+          { socio: { nombre: { contains: query, mode: 'insensitive' } } },
+          { socio: { apellido: { contains: query, mode: 'insensitive' } } },
+          { socio: { dni: { contains: query, mode: 'insensitive' } } },
+          { plan: { nombre: { contains: query, mode: 'insensitive' } } },
         ],
       },
     });

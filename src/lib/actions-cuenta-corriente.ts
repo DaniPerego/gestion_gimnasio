@@ -60,14 +60,14 @@ export async function abrirCuentaCorriente(
   formData: FormData
 ): Promise<AbrirCuentaCorrienteState> {
   // Validar datos
-  const socioId = formData.get('socioId');
-  const descripcion = formData.get('descripcion');
+  const rawSocioId = formData.get('socioId');
+  const rawDescripcion = formData.get('descripcion');
   
-  console.log('abrirCuentaCorriente - datos recibidos:', { socioId, descripcion });
+  console.log('abrirCuentaCorriente - datos recibidos:', { rawSocioId, rawDescripcion });
   
   const validatedFields = AbrirCuentaCorrienteSchema.safeParse({
-    socioId,
-    descripcion,
+    socioId: rawSocioId,
+    descripcion: rawDescripcion,
   });
 
   if (!validatedFields.success) {
@@ -85,7 +85,6 @@ export async function abrirCuentaCorriente(
     // Verificar si el socio existe
     const socio = await prisma.socio.findUnique({
       where: { id: socioId },
-      include: { cuentaCorriente: true },
     });
 
     if (!socio) {
@@ -96,7 +95,11 @@ export async function abrirCuentaCorriente(
     }
 
     // Verificar si ya tiene cuenta corriente
-    if (socio.cuentaCorriente) {
+    const cuentaExistente = await prisma.cuentaCorriente.findUnique({
+      where: { socioId },
+    });
+
+    if (cuentaExistente) {
       return {
         message: 'El socio ya tiene una cuenta corriente activa.',
         success: false,
@@ -114,8 +117,8 @@ export async function abrirCuentaCorriente(
       },
     });
 
-    revalidatePath(`/admin/socios/${socioId}/edit`);
-    revalidatePath('/admin/socios');
+    revalidatePath(`/admin/cuenta-corriente/${socioId}`);
+    revalidatePath('/admin/cuenta-corriente');
 
     return {
       message: 'Cuenta corriente abierta exitosamente.',
