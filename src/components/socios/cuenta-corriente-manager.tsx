@@ -88,6 +88,13 @@ export default function CuentaCorrienteManager({ socioId, socioNombre, cuentaCor
           {stateAbrir.message && (
             <div className={`mt-4 rounded-lg p-4 ${stateAbrir.success ? 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300' : 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300'}`}>
               <p className="font-medium">{stateAbrir.message}</p>
+              {stateAbrir.errors && Object.keys(stateAbrir.errors).length > 0 && (
+                <div className="mt-2 text-sm">
+                  {Object.entries(stateAbrir.errors).map(([key, value]) => (
+                    <p key={key}>• {key}: {Array.isArray(value) ? value.join(', ') : value}</p>
+                  ))}
+                </div>
+              )}
               {stateAbrir.success && (
                 <p className="mt-1 text-sm">Actualizando...</p>
               )}

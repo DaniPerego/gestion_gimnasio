@@ -66,6 +66,13 @@ export default function CuentaCorrienteCard({ socioId, cuentaCorriente }: Props)
         {stateAbrir.message && (
           <div className={`mt-3 rounded-lg p-3 ${stateAbrir.success ? 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300' : 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300'}`}>
             <p className="text-sm font-medium">{stateAbrir.message}</p>
+            {stateAbrir.errors && Object.keys(stateAbrir.errors).length > 0 && (
+              <div className="mt-2 text-xs">
+                {Object.entries(stateAbrir.errors).map(([key, value]) => (
+                  <p key={key}>• {key}: {Array.isArray(value) ? value.join(', ') : value}</p>
+                ))}
+              </div>
+            )}
             {stateAbrir.success && (
               <p className="mt-1 text-xs">Recarga la página para ver la cuenta corriente.</p>
             )}

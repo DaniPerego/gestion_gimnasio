@@ -8,7 +8,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 // Schemas de validación
 const AbrirCuentaCorrienteSchema = z.object({
   socioId: z.string().min(1, 'El socio es requerido'),
-  descripcion: z.string().optional(),
+  descripcion: z.string().optional().nullable(),
 });
 
 const RegistrarMovimientoSchema = z.object({
@@ -60,12 +60,18 @@ export async function abrirCuentaCorriente(
   formData: FormData
 ): Promise<AbrirCuentaCorrienteState> {
   // Validar datos
+  const socioId = formData.get('socioId');
+  const descripcion = formData.get('descripcion');
+  
+  console.log('abrirCuentaCorriente - datos recibidos:', { socioId, descripcion });
+  
   const validatedFields = AbrirCuentaCorrienteSchema.safeParse({
-    socioId: formData.get('socioId'),
-    descripcion: formData.get('descripcion'),
+    socioId,
+    descripcion,
   });
 
   if (!validatedFields.success) {
+    console.error('Errores de validación:', validatedFields.error.flatten().fieldErrors);
     return {
       errors: validatedFields.error.flatten().fieldErrors,
       message: 'Error de validación. Por favor revise los campos.',
