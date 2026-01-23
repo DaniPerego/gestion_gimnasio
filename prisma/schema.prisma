@@ -8,7 +8,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("PRISMA_DATABASE_URL")
-  directUrl = env("POSTGRES_URL")
+  directUrl = env("POSTGRES_URL") // Opcional para desarrollo local
 }
 
 // --- Autenticación y Administración ---

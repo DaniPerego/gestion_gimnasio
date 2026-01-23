@@ -6,6 +6,16 @@ export async function fetchSocioById(id: string) {
   try {
     const socio = await prisma.socio.findUnique({
       where: { id },
+      include: {
+        cuentaCorriente: {
+          include: {
+            movimientos: {
+              orderBy: { createdAt: 'desc' },
+              take: 10, // Últimos 10 movimientos
+            },
+          },
+        },
+      },
     });
     return socio;
   } catch (error) {

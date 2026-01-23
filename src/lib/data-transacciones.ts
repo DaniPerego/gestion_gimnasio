@@ -74,7 +74,11 @@ export async function fetchActiveSuscripcionesForSelect() {
     const suscripciones = await prisma.suscripcion.findMany({
       where: { activa: true },
       include: {
-        socio: true,
+        socio: {
+          include: {
+            cuentaCorriente: true,
+          },
+        },
         plan: true,
       },
       orderBy: {
@@ -84,6 +88,14 @@ export async function fetchActiveSuscripcionesForSelect() {
     // Convertir Decimal a number para evitar error de serialización
     return suscripciones.map(s => ({
       ...s,
+      socio: {
+        ...s.socio,
+        cuentaCorriente: s.socio.cuentaCorriente ? {
+          ...s.socio.cuentaCorriente,
+          saldoDeuda: Number(s.socio.cuentaCorriente.saldoDeuda),
+          saldoCredito: Number(s.socio.cuentaCorriente.saldoCredito),
+        } : null,
+      },
       plan: {
         ...s.plan,
         precio: Number(s.plan.precio)
