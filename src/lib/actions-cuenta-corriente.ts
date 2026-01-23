@@ -348,3 +348,48 @@ export async function obtenerSaldoNeto(cuentaCorrienteId: string): Promise<numbe
     return 0;
   }
 }
+
+/**
+ * Abrir cuenta corriente (versión simplificada para uso directo)
+ */
+export async function abrirCuentaCorrienteDirecto(socioId: string, descripcion?: string) {
+  try {
+    // Verificar si el socio existe
+    const socio = await prisma.socio.findUnique({
+      where: { id: socioId },
+    });
+
+    if (!socio) {
+      throw new Error('El socio no existe.');
+    }
+
+    // Verificar si ya tiene cuenta corriente
+    const cuentaExistente = await prisma.cuentaCorriente.findUnique({
+      where: { socioId },
+    });
+
+    if (cuentaExistente) {
+      throw new Error('El socio ya tiene una cuenta corriente activa.');
+    }
+
+    // Crear cuenta corriente
+    await prisma.cuentaCorriente.create({
+      data: {
+        socioId,
+        descripcion: descripcion || 'Cuenta corriente abierta',
+        saldoDeuda: new Decimal(0),
+        saldoCredito: new Decimal(0),
+        estado: 'ACTIVO',
+      },
+    });
+
+    revalidatePath(`/admin/cuenta-corriente/${socioId}`);
+    revalidatePath('/admin/cuenta-corriente');
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error al abrir cuenta corriente:', error);
+    throw error;
+  }
+}
+
