@@ -10,9 +10,9 @@ const PlanSchema = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio'),
   descripcion: z.string().optional(),
   precio: z.coerce.number().min(0, 'El precio debe ser mayor o igual a 0'),
-  duracionMeses: z.coerce.number().int().min(1, 'La duración debe ser al menos 1'),
-  allowsMusculacion: z.coerce.boolean(),
-  allowsCrossfit: z.coerce.boolean(),
+  duracionMeses: z.coerce.number().int().min(1, 'La duración debe ser al menos 1 mes'),
+  allowsMusculacion: z.coerce.boolean().optional(),
+  allowsCrossfit: z.coerce.boolean().optional(),
 });
 
 const CreatePlan = PlanSchema.omit({ id: true });
@@ -44,8 +44,8 @@ export async function createPlan(prevState: unknown, formData: FormData) {
         descripcion: descripcion || null,
         precio,
         duracionMeses,
-        allowsMusculacion,
-        allowsCrossfit,
+        allowsMusculacion: allowsMusculacion || false,
+        allowsCrossfit: allowsCrossfit || false,
       },
     });
   } catch {
@@ -85,8 +85,8 @@ export async function updatePlan(id: string, prevState: unknown, formData: FormD
         descripcion: descripcion || null,
         precio,
         duracionMeses,
-        allowsMusculacion,
-        allowsCrossfit,
+        allowsMusculacion: allowsMusculacion || false,
+        allowsCrossfit: allowsCrossfit || false,
       },
     });
   } catch {

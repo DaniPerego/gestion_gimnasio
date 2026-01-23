@@ -15,7 +15,7 @@ export default function EditForm({ socio }: { socio: Socio }) {
       <div className="rounded-md bg-gray-50 p-4 md:p-6">
         {/* Nombre */}
         <div className="mb-4">
-          <label htmlFor="nombre" className="mb-2 block text-sm font-medium text-gray-900">
+          <label htmlFor="nombre" className="mb-2 block text-sm font-medium">
             Nombre
           </label>
           <div className="relative">
@@ -41,7 +41,7 @@ export default function EditForm({ socio }: { socio: Socio }) {
 
         {/* Apellido */}
         <div className="mb-4">
-          <label htmlFor="apellido" className="mb-2 block text-sm font-medium text-gray-900">
+          <label htmlFor="apellido" className="mb-2 block text-sm font-medium">
             Apellido
           </label>
           <div className="relative">
@@ -67,7 +67,7 @@ export default function EditForm({ socio }: { socio: Socio }) {
 
         {/* DNI */}
         <div className="mb-4">
-          <label htmlFor="dni" className="mb-2 block text-sm font-medium text-gray-900">
+          <label htmlFor="dni" className="mb-2 block text-sm font-medium">
             DNI
           </label>
           <div className="relative">
@@ -91,45 +91,9 @@ export default function EditForm({ socio }: { socio: Socio }) {
           </div>
         </div>
 
-        {/* Fecha Nacimiento */}
-        <div className="mb-4">
-          <label htmlFor="fechaNacimiento" className="mb-2 block text-sm font-medium text-gray-900">
-            Fecha de Nacimiento
-          </label>
-          <div className="relative">
-            <input
-              id="fechaNacimiento"
-              name="fechaNacimiento"
-              type="date"
-              defaultValue={socio.fechaNacimiento ? new Date(socio.fechaNacimiento).toISOString().split('T')[0] : ''}
-              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
-            />
-          </div>
-        </div>
-
-        {/* Género */}
-        <div className="mb-4">
-          <label htmlFor="genero" className="mb-2 block text-sm font-medium text-gray-900">
-            Género
-          </label>
-          <div className="relative">
-            <select
-              id="genero"
-              name="genero"
-              defaultValue={socio.genero || ''}
-              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
-            >
-              <option value="">Seleccione...</option>
-              <option value="M">Masculino</option>
-              <option value="F">Femenino</option>
-              <option value="O">Otro</option>
-            </select>
-          </div>
-        </div>
-
         {/* Email */}
         <div className="mb-4">
-          <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-900">
+          <label htmlFor="email" className="mb-2 block text-sm font-medium">
             Email
           </label>
           <div className="relative">
@@ -155,7 +119,7 @@ export default function EditForm({ socio }: { socio: Socio }) {
 
         {/* Telefono */}
         <div className="mb-4">
-          <label htmlFor="telefono" className="mb-2 block text-sm font-medium text-gray-900">
+          <label htmlFor="telefono" className="mb-2 block text-sm font-medium">
             Teléfono
           </label>
           <div className="relative">
@@ -170,9 +134,45 @@ export default function EditForm({ socio }: { socio: Socio }) {
           </div>
         </div>
 
+        {/* Fecha de Nacimiento */}
+        <div className="mb-4">
+          <label htmlFor="fechaNacimiento" className="mb-2 block text-sm font-medium">
+            Fecha de Nacimiento
+          </label>
+          <div className="relative">
+            <input
+              id="fechaNacimiento"
+              name="fechaNacimiento"
+              type="date"
+              defaultValue={socio.fechaNacimiento ? new Date(socio.fechaNacimiento).toISOString().split('T')[0] : ''}
+              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2"
+            />
+          </div>
+        </div>
+
+        {/* Género */}
+        <div className="mb-4">
+          <label htmlFor="genero" className="mb-2 block text-sm font-medium">
+            Género
+          </label>
+          <div className="relative">
+            <select
+              id="genero"
+              name="genero"
+              defaultValue={socio.genero || ''}
+              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2"
+            >
+              <option value="">Seleccione...</option>
+              <option value="Masculino">Masculino</option>
+              <option value="Femenino">Femenino</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+        </div>
+
         {/* Dirección */}
         <div className="mb-4">
-          <label htmlFor="direccion" className="mb-2 block text-sm font-medium text-gray-900">
+          <label htmlFor="direccion" className="mb-2 block text-sm font-medium">
             Dirección
           </label>
           <div className="relative">
@@ -192,8 +192,8 @@ export default function EditForm({ socio }: { socio: Socio }) {
 
         {/* Contacto Emergencia */}
         <div className="mb-4">
-          <label htmlFor="contactoEmergencia" className="mb-2 block text-sm font-medium text-gray-900">
-            Nombre Contacto Emergencia
+          <label htmlFor="contactoEmergencia" className="mb-2 block text-sm font-medium">
+            Nombre Contacto Emergencia <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <input
@@ -203,13 +203,14 @@ export default function EditForm({ socio }: { socio: Socio }) {
               defaultValue={socio.contactoEmergencia || ''}
               placeholder="Nombre de familiar o amigo"
               className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+              required
             />
           </div>
         </div>
 
         {/* Teléfono Emergencia */}
         <div className="mb-4">
-          <label htmlFor="telefonoEmergencia" className="mb-2 block text-sm font-medium text-gray-900">
+          <label htmlFor="telefonoEmergencia" className="mb-2 block text-sm font-medium">
             Teléfono Emergencia
           </label>
           <div className="relative">
@@ -229,24 +230,25 @@ export default function EditForm({ socio }: { socio: Socio }) {
 
         {/* Condiciones Médicas */}
         <div className="mb-4">
-          <label htmlFor="condicionesMedicas" className="mb-2 block text-sm font-medium text-gray-900">
-            Condiciones Médicas / Alergias
+          <label htmlFor="condicionesMedicas" className="mb-2 block text-sm font-medium">
+            Condiciones Médicas / Alergias <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <textarea
               id="condicionesMedicas"
               name="condicionesMedicas"
               defaultValue={socio.condicionesMedicas || ''}
-              placeholder="Describa condiciones médicas relevantes..."
+              placeholder="Describa condiciones médicas relevantes o escriba 'Ninguna'"
               className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
               rows={3}
+              required
             />
           </div>
         </div>
 
         {/* Objetivo */}
         <div className="mb-4">
-          <label htmlFor="objetivo" className="mb-2 block text-sm font-medium text-gray-900">
+          <label htmlFor="objetivo" className="mb-2 block text-sm font-medium">
             Objetivo Principal
           </label>
           <div className="relative">
@@ -270,17 +272,15 @@ export default function EditForm({ socio }: { socio: Socio }) {
               id="esLibre"
               name="esLibre"
               type="checkbox"
-              defaultChecked={socio.esLibre}
+              defaultChecked={socio.esLibre || false}
               className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
-            <label htmlFor="esLibre" className="ml-2 block text-sm font-medium text-gray-900">
-              Socio Libre (Acceso gratuito/ilimitado)
+            <label htmlFor="esLibre" className="ml-2 block text-sm text-gray-900">
+              Socio Libre (acceso sin vencimiento)
             </label>
           </div>
-          <p className="mt-1 text-xs text-gray-500">
-            Si se marca, el socio tendrá acceso permitido siempre, sin necesidad de suscripción.
-          </p>
         </div>
+
 
         <div aria-live="polite" aria-atomic="true">
             {state.message && (

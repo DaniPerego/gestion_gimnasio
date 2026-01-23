@@ -13,7 +13,7 @@ export default function Form() {
       <div className="rounded-md bg-gray-50 p-4 md:p-6">
         {/* Nombre */}
         <div className="mb-4">
-          <label htmlFor="nombre" className="mb-2 block text-sm font-medium text-gray-900">
+          <label htmlFor="nombre" className="mb-2 block text-sm font-medium">
             Nombre del Plan
           </label>
           <div className="relative">
@@ -38,7 +38,7 @@ export default function Form() {
 
         {/* Descripcion */}
         <div className="mb-4">
-          <label htmlFor="descripcion" className="mb-2 block text-sm font-medium text-gray-900">
+          <label htmlFor="descripcion" className="mb-2 block text-sm font-medium">
             Descripción
           </label>
           <div className="relative">
@@ -54,7 +54,7 @@ export default function Form() {
 
         {/* Precio */}
         <div className="mb-4">
-          <label htmlFor="precio" className="mb-2 block text-sm font-medium text-gray-900">
+          <label htmlFor="precio" className="mb-2 block text-sm font-medium">
             Precio
           </label>
           <div className="relative">
@@ -78,20 +78,21 @@ export default function Form() {
           </div>
         </div>
 
-        {/* Duración en meses */}
+        {/* Duracion */}
         <div className="mb-4">
-          <label htmlFor="duracionMeses" className="mb-2 block text-sm font-medium text-gray-900">
-            Duración (meses)
+          <label htmlFor="duracionMeses" className="mb-2 block text-sm font-medium">
+            Duración (Meses)
           </label>
-          <input
-            id="duracionMeses"
-            name="duracionMeses"
-            type="number"
-            min="1"
-            placeholder="1"
-            className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
-            aria-describedby="duracion-error"
-          />
+          <div className="relative">
+            <input
+              id="duracionMeses"
+              name="duracionMeses"
+              type="number"
+              placeholder="1"
+              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+              aria-describedby="duracion-error"
+            />
+          </div>
           <div id="duracion-error" aria-live="polite" aria-atomic="true">
             {state.errors?.duracionMeses &&
               state.errors.duracionMeses.map((error: string) => (
@@ -102,36 +103,40 @@ export default function Form() {
           </div>
         </div>
 
-        {/* Disciplinas */}
+        <hr className="my-6 border-gray-200" />
+        <h3 className="mb-4 text-lg font-medium text-gray-900">Disciplinas Permitidas</h3>
+
+        {/* Allows Musculacion */}
         <div className="mb-4">
-          <span className="mb-2 block text-sm font-medium text-gray-900">
-            Disciplinas Permitidas
-          </span>
-          <div className="flex gap-4">
-            <div className="flex items-center">
-              <input
-                id="allowsMusculacion"
-                name="allowsMusculacion"
-                type="checkbox"
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <label htmlFor="allowsMusculacion" className="ml-2 block text-sm text-gray-900">
-                Musculación
-              </label>
-            </div>
-            <div className="flex items-center">
-              <input
-                id="allowsCrossfit"
-                name="allowsCrossfit"
-                type="checkbox"
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <label htmlFor="allowsCrossfit" className="ml-2 block text-sm text-gray-900">
-                Crossfit
-              </label>
-            </div>
+          <div className="flex items-center">
+            <input
+              id="allowsMusculacion"
+              name="allowsMusculacion"
+              type="checkbox"
+              defaultChecked
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label htmlFor="allowsMusculacion" className="ml-2 block text-sm text-gray-900">
+              Musculación
+            </label>
           </div>
         </div>
+
+        {/* Allows Crossfit */}
+        <div className="mb-4">
+          <div className="flex items-center">
+            <input
+              id="allowsCrossfit"
+              name="allowsCrossfit"
+              type="checkbox"
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label htmlFor="allowsCrossfit" className="ml-2 block text-sm text-gray-900">
+              Crossfit
+            </label>
+          </div>
+        </div>
+
 
         <div aria-live="polite" aria-atomic="true">
             {state.message && (

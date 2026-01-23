@@ -12,9 +12,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
   return (
     <main>
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Editar Socio</h1>
       </div>
+      
       <EditForm socio={socio} />
     </main>
   );

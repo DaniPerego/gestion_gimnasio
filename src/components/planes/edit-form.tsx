@@ -137,6 +137,42 @@ export default function EditForm({ plan }: { plan: PlanSerializable }) {
           </div>
         </div>
 
+        <hr className="my-6 border-gray-200" />
+        <h3 className="mb-4 text-lg font-medium text-gray-900">Disciplinas Permitidas</h3>
+
+        {/* Allows Musculacion */}
+        <div className="mb-4">
+          <div className="flex items-center">
+            <input
+              id="allowsMusculacion"
+              name="allowsMusculacion"
+              type="checkbox"
+              defaultChecked={plan.allowsMusculacion}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label htmlFor="allowsMusculacion" className="ml-2 block text-sm text-gray-900">
+              Musculación
+            </label>
+          </div>
+        </div>
+
+        {/* Allows Crossfit */}
+        <div className="mb-4">
+          <div className="flex items-center">
+            <input
+              id="allowsCrossfit"
+              name="allowsCrossfit"
+              type="checkbox"
+              defaultChecked={plan.allowsCrossfit}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label htmlFor="allowsCrossfit" className="ml-2 block text-sm text-gray-900">
+              Crossfit
+            </label>
+          </div>
+        </div>
+
+
         <div aria-live="polite" aria-atomic="true">
             {state.message && (
                 <p className="mt-2 text-sm text-red-500" key={state.message}>

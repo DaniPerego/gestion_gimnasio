@@ -39,41 +39,43 @@ model Configuracion {
 }
 
 model Socio {
-  id                 String        @id @default(cuid())
-  nombre             String
-  apellido           String
-  dni                String        @unique
-  email              String?
-  telefono           String?
-  fechaNacimiento    DateTime?
-  genero             String?
-  direccion          String?
-  fotoUrl            String?
-  contactoEmergencia String?
-  telefonoEmergencia String?
-  condicionesMedicas String?
-  objetivo           String?
-  activo             Boolean       @default(true)
-  esLibre            Boolean       @default(false)
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-  cuentaCorriente    String? // SQLite no soporta Json
-  asistencias        Asistencia[]
-  suscripciones      Suscripcion[]
+  id                  String        @id @default(cuid())
+  nombre              String
+  apellido            String
+  dni                 String        @unique
+  email               String?
+  telefono            String?
+  fechaNacimiento     DateTime?
+  genero              String?
+  direccion           String?
+  fotoUrl             String?
+  contactoEmergencia  String?
+  telefonoEmergencia  String?
+  condicionesMedicas  String?
+  objetivo            String?
+  esLibre             Boolean       @default(false)
+  activo              Boolean       @default(true)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  
+  suscripciones       Suscripcion[]
+  asistencias         Asistencia[]
+  cuentaCorriente     CuentaCorriente?
 }
 
 model Plan {
-  id                String        @id @default(cuid())
-  nombre            String
-  descripcion       String?
-  precio            Decimal
-  duracionMeses     Int
-  activo            Boolean       @default(true)
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  allowsCrossfit    Boolean       @default(false)
-  allowsMusculacion Boolean       @default(false)
-  suscripciones     Suscripcion[]
+  id                 String        @id @default(cuid())
+  nombre             String
+  descripcion        String?
+  precio             Decimal
+  duracionMeses      Int
+  allowsMusculacion  Boolean       @default(false)
+  allowsCrossfit     Boolean       @default(false)
+  activo             Boolean       @default(true)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  
+  suscripciones Suscripcion[]
 }
 
 model Suscripcion {
@@ -105,4 +107,40 @@ model Asistencia {
   socioId String
   fecha   DateTime @default(now())
   socio   Socio    @relation(fields: [socioId], references: [id])
+}
+
+// --- Cuenta Corriente ---
+
+model CuentaCorriente {
+  id              String      @id @default(cuid())
+  socioId         String      @unique
+  saldoDeuda      Decimal     @default(0) // Monto adeudado (positivo)
+  saldoCredito    Decimal     @default(0) // Monto a favor (positivo)
+  
+  descripcion     String?
+  estado          String      @default("ACTIVO") // ACTIVO, SALDADO, CERRADO
+  
+  socio           Socio       @relation(fields: [socioId], references: [id], onDelete: Cascade)
+  movimientos     MovimientoCuentaCorriente[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([socioId])
+}
+
+model MovimientoCuentaCorriente {
+  id                  String      @id @default(cuid())
+  cuentaCorrienteId   String
+  transaccionId       String?
+  
+  tipo                String      // "DEUDA", "CREDITO", "PAGO", "AJUSTE"
+  monto               Decimal
+  descripcion         String
+  
+  cuentaCorriente     CuentaCorriente @relation(fields: [cuentaCorrienteId], references: [id], onDelete: Cascade)
+  
+  createdAt           DateTime    @default(now())
+  
+  @@index([cuentaCorrienteId])
 }
