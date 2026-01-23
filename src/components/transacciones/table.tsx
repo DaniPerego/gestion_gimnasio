@@ -5,11 +5,13 @@ import { getConfiguracion } from '@/lib/data';
 export default async function TransaccionesTable({
   query,
   currentPage,
+  metodoPago,
 }: {
   query: string;
   currentPage: number;
+  metodoPago?: string;
 }) {
-  const transacciones = await fetchTransacciones(query, currentPage);
+  const transacciones = await fetchTransacciones(query, currentPage, metodoPago);
   const config = await getConfiguracion();
 
   return (

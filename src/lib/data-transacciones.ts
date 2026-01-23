@@ -3,21 +3,32 @@ import { unstable_noStore as noStore } from 'next/cache';
 
 const ITEMS_PER_PAGE = 10;
 
-export async function fetchTransacciones(query: string, currentPage: number) {
+export async function fetchTransacciones(
+  query: string, 
+  currentPage: number,
+  metodoPago?: string
+) {
   noStore();
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
   try {
+    const whereCondition: any = {
+      OR: [
+        { suscripcion: { socio: { nombre: { contains: query, mode: 'insensitive' } } } },
+        { suscripcion: { socio: { apellido: { contains: query, mode: 'insensitive' } } } },
+        { suscripcion: { socio: { dni: { contains: query, mode: 'insensitive' } } } },
+      ],
+    };
+
+    // Agregar filtro por método de pago
+    if (metodoPago && metodoPago !== 'all') {
+      whereCondition.metodoPago = metodoPago;
+    }
+
     const transacciones = await prisma.transaccion.findMany({
       skip: offset,
       take: ITEMS_PER_PAGE,
-      where: {
-        OR: [
-          { suscripcion: { socio: { nombre: { contains: query, mode: 'insensitive' } } } },
-          { suscripcion: { socio: { apellido: { contains: query, mode: 'insensitive' } } } },
-          { suscripcion: { socio: { dni: { contains: query, mode: 'insensitive' } } } },
-        ],
-      },
+      where: whereCondition,
       include: {
         suscripcion: {
           include: {
@@ -49,17 +60,24 @@ export async function fetchTransacciones(query: string, currentPage: number) {
   }
 }
 
-export async function fetchTransaccionesPages(query: string) {
+export async function fetchTransaccionesPages(query: string, metodoPago?: string) {
   noStore();
   try {
+    const whereCondition: any = {
+      OR: [
+        { suscripcion: { socio: { nombre: { contains: query, mode: 'insensitive' } } } },
+        { suscripcion: { socio: { apellido: { contains: query, mode: 'insensitive' } } } },
+        { suscripcion: { socio: { dni: { contains: query, mode: 'insensitive' } } } },
+      ],
+    };
+
+    // Agregar filtro por método de pago
+    if (metodoPago && metodoPago !== 'all') {
+      whereCondition.metodoPago = metodoPago;
+    }
+
     const count = await prisma.transaccion.count({
-      where: {
-        OR: [
-          { suscripcion: { socio: { nombre: { contains: query, mode: 'insensitive' } } } },
-          { suscripcion: { socio: { apellido: { contains: query, mode: 'insensitive' } } } },
-          { suscripcion: { socio: { dni: { contains: query, mode: 'insensitive' } } } },
-        ],
-      },
+      where: whereCondition,
     });
     return Math.ceil(count / ITEMS_PER_PAGE);
   } catch (error) {

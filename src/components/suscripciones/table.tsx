@@ -4,11 +4,13 @@ import { cancelSuscripcion } from '@/lib/actions-suscripciones';
 export default async function SuscripcionesTable({
   query,
   currentPage,
+  estado,
 }: {
   query: string;
   currentPage: number;
+  estado?: string;
 }) {
-  const suscripciones = await fetchSuscripciones(query, currentPage);
+  const suscripciones = await fetchSuscripciones(query, currentPage, estado);
 
   return (
     <div className="mt-6 flow-root">

@@ -5,11 +5,13 @@ import { deleteUsuario } from '@/lib/actions-usuarios';
 export default async function UsuariosTable({
   query,
   currentPage,
+  rol,
 }: {
   query: string;
   currentPage: number;
+  rol?: string;
 }) {
-  const usuarios = await fetchUsuarios(query, currentPage);
+  const usuarios = await fetchUsuarios(query, currentPage, rol);
 
   return (
     <div className="mt-6 flow-root">

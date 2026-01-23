@@ -6,11 +6,13 @@ import WhatsAppButton from './whatsapp-button';
 export default async function SociosTable({
   query,
   currentPage,
+  estado,
 }: {
   query: string;
   currentPage: number;
+  estado?: string;
 }) {
-  const socios = await fetchFilteredSocios(query, currentPage);
+  const socios = await fetchFilteredSocios(query, currentPage, estado);
 
   return (
     <div className="mt-6 flow-root">
