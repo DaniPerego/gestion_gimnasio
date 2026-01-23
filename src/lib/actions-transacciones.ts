@@ -57,35 +57,55 @@ export async function createTransaccion(prevState: unknown, formData: FormData) 
       });
 
       if (cuentaCorriente && cuentaCorriente.estado === 'ACTIVO') {
-        // Calcular nuevos saldos
+        // El pago se aplica al saldo neto (deuda - crédito)
         let nuevoSaldoDeuda = cuentaCorriente.saldoDeuda;
         let nuevoSaldoCredito = cuentaCorriente.saldoCredito;
+        let montoPendiente = new Decimal(montoCuentaCorriente);
 
-        // Primero pagar deuda si existe
+        // Primero, aplicar al saldo de deuda
         if (nuevoSaldoDeuda.greaterThan(0)) {
-          const montoAPagarDeuda = nuevoSaldoDeuda.greaterThanOrEqualTo(montoCuentaCorriente)
-            ? montoCuentaCorriente
-            : nuevoSaldoDeuda.toNumber();
-          nuevoSaldoDeuda = nuevoSaldoDeuda.minus(montoAPagarDeuda);
+          if (montoPendiente.greaterThanOrEqualTo(nuevoSaldoDeuda)) {
+            // El pago cubre toda la deuda
+            montoPendiente = montoPendiente.minus(nuevoSaldoDeuda);
+            nuevoSaldoDeuda = new Decimal(0);
+          } else {
+            // El pago cubre parcialmente la deuda
+            nuevoSaldoDeuda = nuevoSaldoDeuda.minus(montoPendiente);
+            montoPendiente = new Decimal(0);
+          }
         }
 
-        // Si queda monto, pagar crédito
-        const montoRestante = montoCuentaCorriente - (cuentaCorriente.saldoDeuda.toNumber() - nuevoSaldoDeuda.toNumber());
-        if (montoRestante > 0 && nuevoSaldoCredito.greaterThan(0)) {
-          const resultadoCredito = nuevoSaldoCredito.minus(montoRestante);
-          nuevoSaldoCredito = resultadoCredito.lessThan(0)
-            ? new Decimal(0)
-            : resultadoCredito;
+        // Si queda dinero después de pagar la deuda, aplicar al crédito
+        if (montoPendiente.greaterThan(0)) {
+          if (nuevoSaldoCredito.greaterThan(0)) {
+            if (montoPendiente.greaterThanOrEqualTo(nuevoSaldoCredito)) {
+              // El pago cubre todo el crédito
+              montoPendiente = montoPendiente.minus(nuevoSaldoCredito);
+              nuevoSaldoCredito = new Decimal(0);
+            } else {
+              // El pago cubre parcialmente el crédito
+              nuevoSaldoCredito = nuevoSaldoCredito.minus(montoPendiente);
+              montoPendiente = new Decimal(0);
+            }
+          } else {
+            // No hay crédito, el monto sobrante se convierte en crédito a favor
+            nuevoSaldoCredito = montoPendiente;
+          }
         }
 
-        // Registrar movimiento y actualizar saldos
+        // Determinar el nuevo estado
+        const nuevoEstado = nuevoSaldoDeuda.equals(0) && nuevoSaldoCredito.equals(0)
+          ? 'SALDADO'
+          : 'ACTIVO';
+
+        // Registrar movimiento y actualizar saldos en una transacción
         await prisma.$transaction([
           prisma.movimientoCuentaCorriente.create({
             data: {
               cuentaCorrienteId,
               tipo: 'PAGO',
-              monto: montoCuentaCorriente,
-              descripcion: `Pago mediante transacción #${transaccion.id}`,
+              monto: new Decimal(montoCuentaCorriente),
+              descripcion: `Pago de cuota + cuenta corriente (Transacción #${transaccion.id})`,
               transaccionId: transaccion.id,
             },
           }),
@@ -94,10 +114,7 @@ export async function createTransaccion(prevState: unknown, formData: FormData) 
             data: {
               saldoDeuda: nuevoSaldoDeuda,
               saldoCredito: nuevoSaldoCredito,
-              estado:
-                nuevoSaldoDeuda.equals(0) && nuevoSaldoCredito.equals(0)
-                  ? 'SALDADO'
-                  : 'ACTIVO',
+              estado: nuevoEstado,
             },
           }),
         ]);
@@ -111,5 +128,6 @@ export async function createTransaccion(prevState: unknown, formData: FormData) 
   }
 
   revalidatePath('/admin/transacciones');
+  revalidatePath('/admin/cuenta-corriente');
   redirect('/admin/transacciones');
 }
