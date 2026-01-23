@@ -33,6 +33,11 @@ export default async function TransaccionesTable({
                   </div>
                   <div className="font-bold text-green-600">
                     ${Number(transaccion.monto).toFixed(2)}
+                    {transaccion.notas && transaccion.notas.includes('Cuenta Corriente:') && (
+                      <span className="block text-xs text-gray-500 font-normal mt-0.5">
+                        (incluye cta. cte.)
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex w-full items-center justify-between pt-4">
@@ -88,8 +93,17 @@ export default async function TransaccionesTable({
                   <td className="whitespace-nowrap px-3 py-3">
                     {transaccion.fecha.toLocaleDateString()}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-3 font-bold text-green-600">
-                    ${Number(transaccion.monto).toFixed(2)}
+                  <td className="whitespace-nowrap px-3 py-3">
+                    <div>
+                      <p className="font-bold text-green-600 dark:text-green-400">
+                        ${Number(transaccion.monto).toFixed(2)}
+                      </p>
+                      {transaccion.notas && transaccion.notas.includes('Cuenta Corriente:') && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          (incluye cta. cte.)
+                        </p>
+                      )}
+                    </div>
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
                     {transaccion.metodoPago}

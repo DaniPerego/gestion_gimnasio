@@ -40,13 +40,21 @@ export async function createTransaccion(prevState: unknown, formData: FormData) 
   const { suscripcionId, monto, metodoPago, notas, incluirCuentaCorriente, montoCuentaCorriente, cuentaCorrienteId } = validatedFields.data;
 
   try {
-    // Crear transacción principal
+    // Calcular monto total y preparar notas con detalle
+    const montoTotal = monto + (incluirCuentaCorriente && montoCuentaCorriente ? montoCuentaCorriente : 0);
+    let notasCompletas = notas || '';
+    
+    if (incluirCuentaCorriente && montoCuentaCorriente && montoCuentaCorriente > 0) {
+      notasCompletas = `Cuota: $${monto.toFixed(2)} + Cuenta Corriente: $${montoCuentaCorriente.toFixed(2)} = Total: $${montoTotal.toFixed(2)}${notas ? ' | ' + notas : ''}`;
+    }
+
+    // Crear transacción principal con monto total
     const transaccion = await prisma.transaccion.create({
       data: {
         suscripcionId,
-        monto,
+        monto: montoTotal, // Guardar el monto total
         metodoPago,
-        notas: notas || null,
+        notas: notasCompletas,
       },
     });
 

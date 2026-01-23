@@ -171,9 +171,30 @@ export default function TicketReceipt({ data, onClose, logoUrl }: TicketReceiptP
               </div>
 
               {data.notas && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Notas:</span>
-                  <span className="font-medium text-gray-900">{data.notas}</span>
+                <div className="pt-3 border-t">
+                  {data.notas.includes('Cuenta Corriente:') ? (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-gray-700 mb-2">Detalle del Pago:</p>
+                      <div className="bg-blue-50 rounded-md p-2 text-xs space-y-1">
+                        {data.notas.split(' | ')[0].split(' + ').map((line, idx) => (
+                          <div key={idx} className="flex justify-between">
+                            <span className="text-gray-700">{line.split(':')[0]}:</span>
+                            <span className="font-medium text-gray-900">{line.split(':')[1]}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {data.notas.split(' | ')[1] && (
+                        <div className="text-xs text-gray-600 mt-2">
+                          Nota: {data.notas.split(' | ')[1]}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col">
+                      <span className="text-gray-600 text-xs mb-1">Notas:</span>
+                      <span className="font-medium text-gray-900 text-sm">{data.notas}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
