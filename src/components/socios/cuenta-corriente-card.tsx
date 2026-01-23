@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { abrirCuentaCorriente, registrarMovimiento, cerrarCuentaCorriente } from '@/lib/actions-cuenta-corriente';
 import { useFormState } from 'react-dom';
+import Link from 'next/link';
 
 type CuentaCorriente = {
   id: string;
@@ -41,22 +42,34 @@ export default function CuentaCorrienteCard({ socioId, cuentaCorriente }: Props)
     return (
       <div className="rounded-lg border bg-card p-6">
         <h3 className="mb-4 text-lg font-semibold">Cuenta Corriente</h3>
+        <div className="mb-4 rounded-lg bg-blue-50 p-4 dark:bg-blue-950">
+          <p className="mb-2 text-sm font-medium text-blue-900 dark:text-blue-100">
+            💡 ¿Qué es la Cuenta Corriente?
+          </p>
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            Permite llevar un registro de deudas, créditos y pagos pendientes del socio. 
+            Útil para adelantos, saldos a favor, o cuotas adeudadas.
+          </p>
+        </div>
         <p className="mb-4 text-sm text-muted-foreground">
-          El socio no tiene una cuenta corriente activa.
+          Este socio no tiene una cuenta corriente activa.
         </p>
         <form action={formActionAbrir}>
           <input type="hidden" name="socioId" value={socioId} />
           <button
             type="submit"
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            Abrir Cuenta Corriente
+            ✓ Abrir Cuenta Corriente
           </button>
         </form>
         {stateAbrir.message && (
-          <p className={`mt-2 text-sm ${stateAbrir.success ? 'text-green-600' : 'text-red-600'}`}>
-            {stateAbrir.message}
-          </p>
+          <div className={`mt-3 rounded-lg p-3 ${stateAbrir.success ? 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300' : 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300'}`}>
+            <p className="text-sm font-medium">{stateAbrir.message}</p>
+            {stateAbrir.success && (
+              <p className="mt-1 text-xs">Recarga la página para ver la cuenta corriente.</p>
+            )}
+          </div>
         )}
       </div>
     );
@@ -83,7 +96,7 @@ export default function CuentaCorrienteCard({ socioId, cuentaCorriente }: Props)
       </div>
 
       {/* Saldo */}
-      <div className="mb-6 rounded-lg bg-muted p-4">
+      <div className="mb-4 rounded-lg bg-muted p-4">
         <p className="mb-2 text-sm text-muted-foreground">Saldo Actual</p>
         <div className="flex items-baseline gap-2">
           <p
@@ -117,134 +130,50 @@ export default function CuentaCorrienteCard({ socioId, cuentaCorriente }: Props)
         </div>
       </div>
 
-      {/* Botones de acción */}
-      <div className="mb-6 flex flex-wrap gap-2">
-        <button
-          onClick={() => setShowMovimientoForm(!showMovimientoForm)}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          {showMovimientoForm ? 'Cancelar' : 'Registrar Movimiento'}
-        </button>
-        
-        {saldoNeto === 0 && cuentaCorriente.estado === 'SALDADO' && (
-          <form action={formActionCerrar}>
-            <input type="hidden" name="cuentaCorrienteId" value={cuentaCorriente.id} />
-            <button
-              type="submit"
-              className="rounded-md border border-destructive px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive hover:text-destructive-foreground"
-            >
-              Cerrar Cuenta
-            </button>
-          </form>
-        )}
-      </div>
+      {/* Botón de gestión completa */}
+      <Link
+        href={`/admin/socios/${socioId}/cuenta-corriente`}
+        className="mb-4 block w-full rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-primary-foreground hover:bg-primary/90"
+      >
+        📊 Ver Gestión Completa
+      </Link>
 
-      {/* Formulario de movimiento */}
-      {showMovimientoForm && cuentaCorriente.estado === 'ACTIVO' && (
-        <form action={formActionMovimiento} className="mb-6 rounded-lg border bg-muted p-4">
-          <input type="hidden" name="cuentaCorrienteId" value={cuentaCorriente.id} />
-          
-          <div className="mb-3">
-            <label htmlFor="tipo" className="mb-1 block text-sm font-medium">
-              Tipo de Movimiento
-            </label>
-            <select
-              id="tipo"
-              name="tipo"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              required
-            >
-              <option value="DEUDA">Registrar Deuda (+)</option>
-              <option value="CREDITO">Registrar Crédito (-)</option>
-              <option value="AJUSTE">Ajuste Manual</option>
-            </select>
-          </div>
-
-          <div className="mb-3">
-            <label htmlFor="monto" className="mb-1 block text-sm font-medium">
-              Monto
-            </label>
-            <input
-              type="number"
-              id="monto"
-              name="monto"
-              step="0.01"
-              min="0.01"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              required
-            />
-          </div>
-
-          <div className="mb-3">
-            <label htmlFor="descripcion" className="mb-1 block text-sm font-medium">
-              Descripción
-            </label>
-            <textarea
-              id="descripcion"
-              name="descripcion"
-              rows={2}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Registrar
-          </button>
-
-          {stateMovimiento.message && (
-            <p className={`mt-2 text-sm ${stateMovimiento.success ? 'text-green-600' : 'text-red-600'}`}>
-              {stateMovimiento.message}
-            </p>
-          )}
-        </form>
-      )}
-
-      {/* Lista de movimientos */}
+      {/* Últimos movimientos (resumen) */}
       {cuentaCorriente.movimientos && cuentaCorriente.movimientos.length > 0 && (
         <div>
-          <h4 className="mb-3 text-sm font-medium">Últimos Movimientos</h4>
+          <h4 className="mb-2 text-sm font-medium">Últimos Movimientos</h4>
           <div className="space-y-2">
-            {cuentaCorriente.movimientos.map((mov) => (
+            {cuentaCorriente.movimientos.slice(0, 3).map((mov) => (
               <div
                 key={mov.id}
-                className="flex items-start justify-between rounded-lg border bg-background p-3 text-sm"
+                className="flex items-center justify-between rounded border bg-background p-2 text-xs"
               >
                 <div className="flex-1">
-                  <div className="mb-1 flex items-center gap-2">
-                    <span
-                      className={`rounded px-2 py-0.5 text-xs font-medium ${
-                        mov.tipo === 'DEUDA'
-                          ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
-                          : mov.tipo === 'CREDITO'
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
-                          : mov.tipo === 'PAGO'
-                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100'
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100'
-                      }`}
-                    >
-                      {mov.tipo}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {new Date(mov.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <p className="text-muted-foreground">{mov.descripcion}</p>
+                  <span
+                    className={`mr-2 rounded px-1.5 py-0.5 text-xs font-medium ${
+                      mov.tipo === 'DEUDA'
+                        ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+                        : mov.tipo === 'CREDITO'
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
+                        : mov.tipo === 'PAGO'
+                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100'
+                        : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100'
+                    }`}
+                  >
+                    {mov.tipo}
+                  </span>
+                  <span className="text-muted-foreground">{new Date(mov.createdAt).toLocaleDateString()}</span>
                 </div>
-                <p className="ml-2 font-medium">${mov.monto.toFixed(2)}</p>
+                <p className="font-medium">${mov.monto.toFixed(2)}</p>
               </div>
             ))}
           </div>
+          {cuentaCorriente.movimientos.length > 3 && (
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              +{cuentaCorriente.movimientos.length - 3} movimientos más
+            </p>
+          )}
         </div>
-      )}
-
-      {stateCerrar.message && (
-        <p className={`mt-2 text-sm ${stateCerrar.success ? 'text-green-600' : 'text-red-600'}`}>
-          {stateCerrar.message}
-        </p>
       )}
     </div>
   );
