@@ -122,7 +122,6 @@ export async function POST(request: Request) {
         const cleanData = sanitizeData(data.configuracion, 'configuracion').map(({ id, ...rest }: any) => rest);
         const result = await prisma.configuracion.createMany({
           data: cleanData,
-          skipDuplicates: true,
         });
         importedCount.configuracion = result.count;
       }
@@ -132,7 +131,6 @@ export async function POST(request: Request) {
         const cleanData = sanitizeData(data.usuarios, 'usuario').map(({ id, ...rest }: any) => rest);
         const result = await prisma.usuario.createMany({
           data: cleanData,
-          skipDuplicates: true,
         });
         importedCount.usuarios = result.count;
       }
@@ -142,7 +140,6 @@ export async function POST(request: Request) {
         const cleanData = sanitizeData(data.planes, 'plan').map(({ id, ...rest }: any) => rest);
         const result = await prisma.plan.createMany({
           data: cleanData,
-          skipDuplicates: true,
         });
         importedCount.planes = result.count;
       }
@@ -170,7 +167,6 @@ export async function POST(request: Request) {
         const cleanData = processedSocios.map(({ id, ...rest }: any) => rest);
         const result = await prisma.socio.createMany({
           data: cleanData,
-          skipDuplicates: true,
         });
         importedCount.socios = result.count;
       }
@@ -223,7 +219,6 @@ export async function POST(request: Request) {
           const cleanData = sanitizeData(validSuscripciones, 'suscripcion').map(({ id, ...rest }: any) => rest);
           const result = await prisma.suscripcion.createMany({
             data: cleanData,
-            skipDuplicates: true,
           });
           importedCount.suscripciones = result.count;
         }
@@ -262,7 +257,6 @@ export async function POST(request: Request) {
           const cleanData = sanitizeData(validAsistencias, 'asistencia').map(({ id, ...rest }: any) => rest);
           const result = await prisma.asistencia.createMany({
             data: cleanData,
-            skipDuplicates: true,
           });
           importedCount.asistencias = result.count;
         }
