@@ -1,4 +1,9 @@
 import { fetchAsistencias } from '@/lib/data-asistencias';
+import { Asistencia, Socio } from '@prisma/client';
+
+type AsistenciaConSocio = Asistencia & {
+  socio: Socio;
+};
 
 export default async function AsistenciasTable({
   query,
@@ -7,7 +12,7 @@ export default async function AsistenciasTable({
   query: string;
   currentPage: number;
 }) {
-  const asistencias = await fetchAsistencias(query, currentPage);
+  const asistencias = await fetchAsistencias(query, currentPage) as AsistenciaConSocio[];
 
   return (
     <div className="mt-6 flow-root">
