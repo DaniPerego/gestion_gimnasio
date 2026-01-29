@@ -5,9 +5,11 @@ import { useState } from 'react';
 type SuscripcionWithRelations = {
   id: string;
   socio: { 
+    id: string;
     nombre: string; 
     apellido: string; 
     dni: string;
+    telefono?: string | null;
     cuentaCorriente?: {
       id: string;
       saldoDeuda: number;
