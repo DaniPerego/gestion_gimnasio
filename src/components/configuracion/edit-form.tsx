@@ -5,8 +5,19 @@ import { updateConfiguracion } from '@/lib/actions-configuracion';
 import { Configuracion } from '@prisma/client';
 import { PhotoIcon, XMarkIcon, ArrowUpTrayIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
+interface FormState {
+  message?: string;
+  errors?: {
+    nombreGimnasio?: string[];
+    colorPrimario?: string[];
+    colorSecundario?: string[];
+    logoUrl?: string[];
+    fondoUrl?: string[];
+  };
+}
+
 export default function ConfigForm({ config }: { config: Configuracion | null }) {
-  const initialState = { message: '', errors: {} };
+  const initialState: FormState = { message: '', errors: {} };
   const [state, dispatch, isPending] = useActionState(updateConfiguracion, initialState);
   
   // Estado para manejar la previsualización de la imagen de fondo

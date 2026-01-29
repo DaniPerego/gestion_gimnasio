@@ -8,8 +8,19 @@ import { Socio, Plan, Suscripcion } from '@prisma/client';
 type PlanSerializable = Omit<Plan, 'precio'> & { precio: number };
 type SuscripcionWithRelations = Suscripcion & { socio: Socio; plan: PlanSerializable };
 
+interface FormState {
+  message?: string;
+  errors?: {
+    socioId?: string[];
+    planId?: string[];
+    fechaInicio?: string[];
+    fechaFin?: string[];
+    monto?: string[];
+  };
+}
+
 export default function EditForm({ suscripcion }: { suscripcion: SuscripcionWithRelations }) {
-  const initialState = { message: '', errors: {} };
+  const initialState: FormState = { message: '', errors: {} };
   const updateSuscripcionWithId = updateSuscripcion.bind(null, suscripcion.id);
   const [state, dispatch, isPending] = useActionState(updateSuscripcionWithId, initialState);
 

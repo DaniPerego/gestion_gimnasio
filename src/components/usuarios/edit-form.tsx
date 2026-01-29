@@ -5,8 +5,18 @@ import { useActionState } from 'react';
 import { updateUsuario } from '@/lib/actions-usuarios';
 import { Usuario } from '@prisma/client';
 
+interface FormState {
+  message?: string;
+  errors?: {
+    email?: string[];
+    password?: string[];
+    nombre?: string[];
+    rol?: string[];
+  };
+}
+
 export default function EditForm({ usuario }: { usuario: Usuario }) {
-  const initialState = { message: '', errors: {} };
+  const initialState: FormState = { message: '', errors: {} };
   const updateUsuarioWithId = updateUsuario.bind(null, usuario.id);
   const [state, dispatch, isPending] = useActionState(updateUsuarioWithId, initialState);
 

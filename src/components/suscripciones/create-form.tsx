@@ -8,8 +8,19 @@ import { Socio, Plan } from '@prisma/client';
 // Definir un tipo Plan serializable donde 'precio' es number en lugar de Decimal
 type PlanSerializable = Omit<Plan, 'precio'> & { precio: number };
 
+interface FormState {
+  message?: string;
+  errors?: {
+    socioId?: string[];
+    planId?: string[];
+    fechaInicio?: string[];
+    fechaFin?: string[];
+    monto?: string[];
+  };
+}
+
 export default function Form({ socios, planes }: { socios: Socio[], planes: PlanSerializable[] }) {
-  const initialState = { message: '', errors: {} };
+  const initialState: FormState = { message: '', errors: {} };
   const [state, dispatch, isPending] = useActionState(createSuscripcion, initialState);
 
   return (

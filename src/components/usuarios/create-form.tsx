@@ -4,8 +4,18 @@ import Link from 'next/link';
 import { useActionState } from 'react';
 import { createUsuario } from '@/lib/actions-usuarios';
 
+interface FormState {
+  message?: string;
+  errors?: {
+    email?: string[];
+    password?: string[];
+    nombre?: string[];
+    rol?: string[];
+  };
+}
+
 export default function Form() {
-  const initialState = { message: '', errors: {} };
+  const initialState: FormState = { message: '', errors: {} };
   const [state, dispatch, isPending] = useActionState(createUsuario, initialState);
 
   return (

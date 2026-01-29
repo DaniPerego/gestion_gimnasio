@@ -7,8 +7,18 @@ import { Plan } from '@prisma/client';
 
 type PlanSerializable = Omit<Plan, 'precio'> & { precio: number };
 
+interface FormState {
+  message?: string;
+  errors?: {
+    nombre?: string[];
+    precio?: string[];
+    duracionMeses?: string[];
+    descripcion?: string[];
+  };
+}
+
 export default function EditForm({ plan }: { plan: PlanSerializable }) {
-  const initialState = { message: '', errors: {} };
+  const initialState: FormState = { message: '', errors: {} };
   const updatePlanWithId = updatePlan.bind(null, plan.id);
   const [state, dispatch, isPending] = useActionState(updatePlanWithId, initialState);
 

@@ -5,8 +5,26 @@ import { useActionState } from 'react';
 import { updateSocio } from '@/lib/actions-socios';
 import { Socio } from '@prisma/client';
 
+interface FormState {
+  message?: string;
+  errors?: {
+    nombre?: string[];
+    apellido?: string[];
+    dni?: string[];
+    email?: string[];
+    telefono?: string[];
+    fechaNacimiento?: string[];
+    genero?: string[];
+    direccion?: string[];
+    contactoEmergencia?: string[];
+    telefonoEmergencia?: string[];
+    condicionesMedicas?: string[];
+    objetivo?: string[];
+  };
+}
+
 export default function EditForm({ socio }: { socio: Socio }) {
-  const initialState = { message: '', errors: {} };
+  const initialState: FormState = { message: '', errors: {} };
   const updateSocioWithId = updateSocio.bind(null, socio.id);
   const [state, dispatch, isPending] = useActionState(updateSocioWithId, initialState);
 

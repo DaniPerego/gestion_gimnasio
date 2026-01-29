@@ -4,8 +4,18 @@ import Link from 'next/link';
 import { useActionState } from 'react';
 import { createPlan } from '@/lib/actions-planes';
 
+interface FormState {
+  message?: string;
+  errors?: {
+    nombre?: string[];
+    precio?: string[];
+    duracionMeses?: string[];
+    descripcion?: string[];
+  };
+}
+
 export default function Form() {
-  const initialState = { message: '', errors: {} };
+  const initialState: FormState = { message: '', errors: {} };
   const [state, dispatch, isPending] = useActionState(createPlan, initialState);
 
   return (

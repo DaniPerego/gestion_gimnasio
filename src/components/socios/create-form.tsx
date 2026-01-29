@@ -4,8 +4,26 @@ import Link from 'next/link';
 import { useActionState } from 'react';
 import { createSocio } from '@/lib/actions-socios';
 
+interface FormState {
+  message?: string;
+  errors?: {
+    nombre?: string[];
+    apellido?: string[];
+    dni?: string[];
+    email?: string[];
+    telefono?: string[];
+    fechaNacimiento?: string[];
+    genero?: string[];
+    direccion?: string[];
+    contactoEmergencia?: string[];
+    telefonoEmergencia?: string[];
+    condicionesMedicas?: string[];
+    objetivo?: string[];
+  };
+}
+
 export default function Form() {
-  const initialState = { message: '', errors: {} };
+  const initialState: FormState = { message: '', errors: {} };
   const [state, dispatch, isPending] = useActionState(createSocio, initialState);
 
   return (
