@@ -4,16 +4,28 @@ import { useState } from 'react';
 
 type SuscripcionWithRelations = {
   id: string;
-  socio: { nombre: string; apellido: string; dni: string };
+  socio: { 
+    nombre: string; 
+    apellido: string; 
+    dni: string;
+    cuentaCorriente?: {
+      id: string;
+      saldoDeuda: number;
+      saldoCredito: number;
+      estado: string;
+    } | null;
+  };
   plan: { nombre: string; precio: number };
 };
 
 export default function SuscripcionSearchSelect({
   suscripciones,
   defaultValue = '',
+  onSuscripcionChange,
 }: {
   suscripciones: SuscripcionWithRelations[];
   defaultValue?: string;
+  onSuscripcionChange?: (suscripcion: SuscripcionWithRelations | null) => void;
 }) {
   const [searchValue, setSearchValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -33,6 +45,15 @@ export default function SuscripcionSearchSelect({
   const displayText = selectedSuscripcion
     ? `${selectedSuscripcion.socio.nombre} ${selectedSuscripcion.socio.apellido} - ${selectedSuscripcion.plan.nombre}`
     : 'Seleccione una suscripción';
+  
+  const handleSelect = (suscripcion: SuscripcionWithRelations) => {
+    setSelectedId(suscripcion.id);
+    setIsOpen(false);
+    setSearchValue('');
+    if (onSuscripcionChange) {
+      onSuscripcionChange(suscripcion);
+    }
+  };
 
   return (
     <div className="relative">
@@ -67,11 +88,7 @@ export default function SuscripcionSearchSelect({
               filteredSuscripciones.map((s) => (
                 <div
                   key={s.id}
-                  onClick={() => {
-                    setSelectedId(s.id);
-                    setIsOpen(false);
-                    setSearchValue('');
-                  }}
+                  onClick={() => handleSelect(s)}
                   className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm flex items-center justify-between transition-colors"
                 >
                   <div>
