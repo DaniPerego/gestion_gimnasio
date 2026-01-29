@@ -9,7 +9,7 @@ import { Socio, Plan } from '@prisma/client';
 type PlanSerializable = Omit<Plan, 'precio'> & { precio: number };
 
 interface FormState {
-  message?: string;
+  message: string;
   errors?: {
     socioId?: string[];
     planId?: string[];

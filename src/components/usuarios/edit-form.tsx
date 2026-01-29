@@ -6,7 +6,7 @@ import { updateUsuario } from '@/lib/actions-usuarios';
 import { Usuario } from '@prisma/client';
 
 interface FormState {
-  message?: string;
+  message: string;
   errors?: {
     email?: string[];
     password?: string[];

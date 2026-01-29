@@ -5,7 +5,7 @@ import { useActionState } from 'react';
 import { createSocio } from '@/lib/actions-socios';
 
 interface FormState {
-  message?: string;
+  message: string;
   errors?: {
     nombre?: string[];
     apellido?: string[];

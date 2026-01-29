@@ -5,7 +5,7 @@ import { useActionState } from 'react';
 import { createUsuario } from '@/lib/actions-usuarios';
 
 interface FormState {
-  message?: string;
+  message: string;
   errors?: {
     email?: string[];
     password?: string[];

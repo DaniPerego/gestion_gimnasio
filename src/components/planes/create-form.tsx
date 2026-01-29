@@ -5,7 +5,7 @@ import { useActionState } from 'react';
 import { createPlan } from '@/lib/actions-planes';
 
 interface FormState {
-  message?: string;
+  message: string;
   errors?: {
     nombre?: string[];
     precio?: string[];

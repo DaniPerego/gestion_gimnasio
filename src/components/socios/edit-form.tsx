@@ -6,7 +6,7 @@ import { updateSocio } from '@/lib/actions-socios';
 import { Socio } from '@prisma/client';
 
 interface FormState {
-  message?: string;
+  message: string;
   errors?: {
     nombre?: string[];
     apellido?: string[];

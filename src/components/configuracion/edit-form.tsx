@@ -6,7 +6,7 @@ import { Configuracion } from '@prisma/client';
 import { PhotoIcon, XMarkIcon, ArrowUpTrayIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 interface FormState {
-  message?: string;
+  message: string;
   errors?: {
     nombreGimnasio?: string[];
     colorPrimario?: string[];

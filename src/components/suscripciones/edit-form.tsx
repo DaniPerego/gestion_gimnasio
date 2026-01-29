@@ -9,7 +9,7 @@ type PlanSerializable = Omit<Plan, 'precio'> & { precio: number };
 type SuscripcionWithRelations = Suscripcion & { socio: Socio; plan: PlanSerializable };
 
 interface FormState {
-  message?: string;
+  message: string;
   errors?: {
     socioId?: string[];
     planId?: string[];
