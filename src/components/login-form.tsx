@@ -1,24 +1,46 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { authenticate } from '@/lib/actions';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { login } from '@/lib/auth-simple';
+import { seedDemoData } from '@/lib/seed-demo';
 
 export default function LoginForm() {
-  const [errorMessage, dispatch] = useActionState(authenticate, undefined);
   const router = useRouter();
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (errorMessage === undefined) {
-      // Login successful - redirect manually since we can't use server-side redirect
-      window.location.href = '/admin';
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    if (!email || !password) {
+      setError('Por favor ingrese email y contraseña.');
+      setLoading(false);
+      return;
     }
-  }, [errorMessage]);
+
+    // Ensure demo data exists
+    seedDemoData();
+
+    const user = login(email, password);
+    if (!user) {
+      setError('Credenciales inválidas.');
+      setLoading(false);
+      return;
+    }
+
+    router.push('/admin');
+  };
 
   return (
-    <form action={dispatch} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-3">
       <div className="flex-1 rounded-lg bg-gray-50 dark:bg-gray-900 px-6 pb-4 pt-8 transition-colors">
         <h1 className="mb-3 text-2xl font-bold text-gray-900 dark:text-white">
           Iniciar Sesión
@@ -62,30 +84,19 @@ export default function LoginForm() {
             </div>
           </div>
         </div>
-        <LoginButton />
-        <div
-          className="flex h-8 items-end space-x-1"
-          aria-live="polite"
-          aria-atomic="true"
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-4 w-full rounded-md bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {errorMessage && (
-            <p className="text-sm text-red-500">{errorMessage}</p>
-          )}
-        </div>
+          {loading ? 'Ingresando...' : 'Ingresar'}
+        </button>
+        {error && (
+          <div className="flex h-8 items-end space-x-1 mt-2" aria-live="polite">
+            <p className="text-sm text-red-500">{error}</p>
+          </div>
+        )}
       </div>
     </form>
-  );
-}
-
-function LoginButton() {
-  const { pending } = useFormStatus();
-
-  return (
-    <button
-      className="mt-4 w-full rounded-md bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-400 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
-      aria-disabled={pending}
-    >
-      Ingresar
-    </button>
   );
 }

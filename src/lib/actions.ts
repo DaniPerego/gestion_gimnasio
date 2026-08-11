@@ -3,9 +3,9 @@
 import { login as simpleLogin } from '@/lib/auth-simple';
 
 export async function authenticate(
-  prevState: string | undefined,
+  prevState: string | null | undefined,
   formData: FormData,
-) {
+): Promise<string | null> {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
@@ -18,7 +18,6 @@ export async function authenticate(
     return 'Credenciales inválidas.';
   }
 
-  // In a real app we'd use cookies/jwt, for demo we redirect
-  // The middleware will check localStorage on the client side
-  return undefined;
+  // Return null to signal success (login-form checks for null)
+  return null;
 }
