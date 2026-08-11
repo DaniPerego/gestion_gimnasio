@@ -14,11 +14,11 @@ export function seedDemoData() {
   const existing = localStorage.getItem('gym_usuarios');
   if (existing) return;
 
-  // ===== Admin User =====
+  // ===== Usuario de Prueba =====
   UsuariosDB.create({
-    email: 'admin@gimnasio.com',
-    password: 'admin123',
-    nombre: 'Administrador Principal',
+    email: 'usuario-prueba@gimnasio.com',
+    password: 'usuario123',
+    nombre: 'Usuario de Prueba',
     rol: 'ADMIN',
     permisoSocios: true,
     permisoPlanes: true,
