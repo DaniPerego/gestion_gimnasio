@@ -5,7 +5,7 @@ import { MoonIcon, SunIcon } from "@heroicons/react/24/outline"
 import { useTheme } from "next-themes"
 
 export function ThemeToggle() {
-  const { setTheme, resolvedTheme, theme } = useTheme()
+  const { setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -18,14 +18,7 @@ export function ThemeToggle() {
 
   return (
     <button
-      type="button"
-      onClick={() => {
-        console.log("Current theme:", theme);
-        console.log("Resolved theme:", resolvedTheme);
-        const newTheme = resolvedTheme === "dark" ? "light" : "dark";
-        console.log("Setting theme to:", newTheme);
-        setTheme(newTheme);
-      }}
+      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
       className="relative flex items-center justify-center rounded-md p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
       title="Cambiar tema"
       aria-label="Cambiar tema"

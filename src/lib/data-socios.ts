@@ -1,35 +1,22 @@
-import prisma from '@/lib/prisma';
+import { SociosDB } from '@/lib/db';
 import { unstable_noStore as noStore } from 'next/cache';
 
 const ITEMS_PER_PAGE = 10;
 
-export async function fetchFilteredSocios(
-  query: string, 
-  currentPage: number,
-  estado?: string
-) {
+export async function fetchFilteredSocios(query: string, currentPage: number) {
   noStore();
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
   try {
-    const whereCondition: any = {
-      OR: [
-        { nombre: { contains: query, mode: 'insensitive' } },
-        { apellido: { contains: query, mode: 'insensitive' } },
-        { dni: { contains: query, mode: 'insensitive' } },
-        { email: { contains: query, mode: 'insensitive' } },
-      ],
-    };
-
-    // Agregar filtro por estado
-    if (estado === 'activo') {
-      whereCondition.activo = true;
-    } else if (estado === 'inactivo') {
-      whereCondition.activo = false;
-    }
-
-    const socios = await prisma.socio.findMany({
-      where: whereCondition,
+    const socios = SociosDB.findMany({
+      where: {
+        OR: [
+          { nombre: query },
+          { apellido: query },
+          { dni: query },
+          { email: query },
+        ],
+      },
       orderBy: { createdAt: 'desc' },
       take: ITEMS_PER_PAGE,
       skip: offset,
@@ -41,27 +28,18 @@ export async function fetchFilteredSocios(
   }
 }
 
-export async function fetchSociosPages(query: string, estado?: string) {
+export async function fetchSociosPages(query: string) {
   noStore();
   try {
-    const whereCondition: any = {
-      OR: [
-        { nombre: { contains: query, mode: 'insensitive' } },
-        { apellido: { contains: query, mode: 'insensitive' } },
-        { dni: { contains: query, mode: 'insensitive' } },
-        { email: { contains: query, mode: 'insensitive' } },
-      ],
-    };
-
-    // Agregar filtro por estado
-    if (estado === 'activo') {
-      whereCondition.activo = true;
-    } else if (estado === 'inactivo') {
-      whereCondition.activo = false;
-    }
-
-    const count = await prisma.socio.count({
-      where: whereCondition,
+    const count = SociosDB.count({
+      where: {
+        OR: [
+          { nombre: query },
+          { apellido: query },
+          { dni: query },
+          { email: query },
+        ],
+      },
     });
     return Math.ceil(count / ITEMS_PER_PAGE);
   } catch (error) {
@@ -73,7 +51,7 @@ export async function fetchSociosPages(query: string, estado?: string) {
 export async function fetchAllSocios() {
   noStore();
   try {
-    const socios = await prisma.socio.findMany({
+    const socios = SociosDB.findMany({
       where: { activo: true },
       orderBy: { apellido: 'asc' },
     });

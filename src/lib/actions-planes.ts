@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import prisma from '@/lib/prisma';
+import { PlanesDB } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -10,9 +10,9 @@ const PlanSchema = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio'),
   descripcion: z.string().optional(),
   precio: z.coerce.number().min(0, 'El precio debe ser mayor o igual a 0'),
-  duracionMeses: z.coerce.number().int().min(1, 'La duración debe ser al menos 1 mes'),
-  allowsMusculacion: z.coerce.boolean().optional(),
-  allowsCrossfit: z.coerce.boolean().optional(),
+  duracionMeses: z.coerce.number().int().min(1, 'La duración debe ser al menos 1'),
+  allowsMusculacion: z.coerce.boolean(),
+  allowsCrossfit: z.coerce.boolean(),
 });
 
 const CreatePlan = PlanSchema.omit({ id: true });
@@ -38,15 +38,14 @@ export async function createPlan(prevState: unknown, formData: FormData) {
   const { nombre, descripcion, precio, duracionMeses, allowsMusculacion, allowsCrossfit } = validatedFields.data;
 
   try {
-    await prisma.plan.create({
-      data: {
-        nombre,
-        descripcion: descripcion || null,
-        precio,
-        duracionMeses,
-        allowsMusculacion: allowsMusculacion || false,
-        allowsCrossfit: allowsCrossfit || false,
-      },
+    PlanesDB.create({
+      nombre,
+      descripcion: descripcion || null,
+      precio,
+      duracionMeses,
+      activo: true,
+      allowsMusculacion,
+      allowsCrossfit,
     });
   } catch {
     return {
@@ -78,16 +77,13 @@ export async function updatePlan(id: string, prevState: unknown, formData: FormD
   const { nombre, descripcion, precio, duracionMeses, allowsMusculacion, allowsCrossfit } = validatedFields.data;
 
   try {
-    await prisma.plan.update({
-      where: { id },
-      data: {
-        nombre,
-        descripcion: descripcion || null,
-        precio,
-        duracionMeses,
-        allowsMusculacion: allowsMusculacion || false,
-        allowsCrossfit: allowsCrossfit || false,
-      },
+    PlanesDB.update({ id }, {
+      nombre,
+      descripcion: descripcion || null,
+      precio,
+      duracionMeses,
+      allowsMusculacion,
+      allowsCrossfit,
     });
   } catch {
     return { message: 'Error de base de datos: No se pudo actualizar el plan.' };
@@ -99,9 +95,7 @@ export async function updatePlan(id: string, prevState: unknown, formData: FormD
 
 export async function deletePlan(id: string) {
   try {
-    await prisma.plan.delete({
-      where: { id },
-    });
+    PlanesDB.delete({ id });
     revalidatePath('/admin/planes');
   } catch (error) {
     console.error('Error deleting plan:', error);

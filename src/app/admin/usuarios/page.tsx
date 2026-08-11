@@ -1,57 +1,93 @@
-import Link from 'next/link';
-import UsuariosTable from '@/components/usuarios/table';
-import Search from '@/components/ui/search';
-import StatusFilter from '@/components/ui/status-filter';
-import Pagination from '@/components/pagination';
-import { fetchUsuariosPages } from '@/lib/data-usuarios';
-import { Suspense } from 'react';
+'use client';
 
-export default async function Page({
-  searchParams,
-}: {
-  searchParams?: Promise<{
-    query?: string;
-    page?: string;
-    rol?: string;
-  }>;
-}) {
-  const params = await searchParams;
-  const query = params?.query || '';
-  const currentPage = Number(params?.page) || 1;
-  const rol = params?.rol || '';
-  const totalPages = await fetchUsuariosPages(query, rol);
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { getCurrentUser } from '@/lib/auth-simple';
+import { fetchUsuarios, fetchUsuariosPages } from '@/lib/data-usuarios';
+import UsersTable from '@/components/usuarios/table';
+import SearchInput from '@/components/ui/search-input';
+
+export default function UsuariosPage() {
+  const router = useRouter();
+  const [usuarios, setUsuarios] = useState<any[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [query, setQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+    setIsAdmin(user.rol === 'ADMIN');
+    loadData('');
+  }, [router]);
+
+  const loadData = async (q: string, page: number = 1) => {
+    setLoading(true);
+    try {
+      const data = await fetchUsuarios(q, page);
+      const pages = await fetchUsuariosPages(q);
+      setUsuarios(data);
+      setTotalPages(pages);
+      setCurrentPage(page);
+      setQuery(q);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  };
+
+  const handleSearch = (q: string) => {
+    loadData(q, 1);
+  };
 
   return (
     <div className="w-full">
       <div className="flex w-full items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Usuarios</h1>
       </div>
-      <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-2 md:mt-8">
-        <div className="flex flex-1 gap-2">
-          <Search placeholder="Buscar usuarios por nombre o email..." />
-          <StatusFilter 
-            filterKey="rol" 
-            options={[
-              { value: 'ADMIN', label: 'Administrador' },
-              { value: 'RECEPCIONISTA', label: 'Recepcionista' },
-            ]}
-            placeholder="Todos los roles"
-          />
+      <div className="mt-4 flex items-center justify-between gap-2 md:mt-8">
+        <div className="relative flex flex-1 shrink-0">
+          <label htmlFor="search" className="sr-only">Buscar</label>
+          <SearchInput placeholder="Buscar usuarios..." onSearch={handleSearch} />
         </div>
-        <Link
-          href="/admin/usuarios/create"
-          className="flex h-10 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-        >
-          <span className="hidden md:block">Crear Usuario</span>
-          <span className="md:hidden">+</span>
-        </Link>
+        {isAdmin && (
+          <Link
+            href="/admin/usuarios/create"
+            className="flex h-10 items-center rounded-lg bg-[var(--primary-color)] px-4 text-sm font-medium text-white transition-colors hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          >
+            <span className="hidden md:block">Crear Usuario</span>
+            <span className="md:hidden">+</span>
+          </Link>
+        )}
       </div>
-      <Suspense key={query + currentPage + rol} fallback={<div className="mt-4 text-gray-500">Cargando...</div>}>
-        <UsuariosTable query={query} currentPage={currentPage} rol={rol} />
-      </Suspense>
-      <div className="mt-5 flex w-full justify-center">
-        <Pagination totalPages={totalPages} />
-      </div>
+      {loading ? (
+        <div className="flex items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div></div>
+      ) : (
+        <>
+          <UsersTable users={usuarios} />
+          <div className="mt-5 flex w-full justify-center">
+            {totalPages > 1 && (
+              <div className="flex gap-2">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => loadData(query, page)}
+                    className={`px-3 py-1 rounded ${currentPage === page ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import prisma from '@/lib/prisma';
+import { ConfiguracionDB } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
 const ConfigSchema = z.object({
@@ -29,28 +29,22 @@ export async function updateConfiguracion(prevState: unknown, formData: FormData
   const { nombreGimnasio, colorPrimario, colorSecundario, fondoUrl } = validatedFields.data;
 
   try {
-    // Buscamos la primera configuración existente para actualizarla
-    const existingConfig = await prisma.configuracion.findFirst();
+    const existingConfig = ConfiguracionDB.findFirst();
 
     if (existingConfig) {
-      await prisma.configuracion.update({
-        where: { id: existingConfig.id },
-        data: {
-          nombreGimnasio,
-          colorPrimario,
-          colorSecundario,
-          fondoUrl,
-        },
+      ConfiguracionDB.update({ id: existingConfig.id }, {
+        nombreGimnasio,
+        colorPrimario,
+        colorSecundario,
+        fondoUrl: fondoUrl || null,
       });
     } else {
-      // Si por alguna razón no existe, la creamos
-      await prisma.configuracion.create({
-        data: {
-          nombreGimnasio,
-          colorPrimario,
-          colorSecundario,
-          fondoUrl,
-        },
+      ConfiguracionDB.create({
+        nombreGimnasio,
+        colorPrimario,
+        colorSecundario,
+        logoUrl: null,
+        fondoUrl: fondoUrl || null,
       });
     }
   } catch {
@@ -59,6 +53,6 @@ export async function updateConfiguracion(prevState: unknown, formData: FormData
     };
   }
 
-  revalidatePath('/admin'); // Revalidar todo el layout admin
+  revalidatePath('/admin');
   return { message: 'Configuración actualizada correctamente.', errors: {} };
 }

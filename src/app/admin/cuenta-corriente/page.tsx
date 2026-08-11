@@ -1,5 +1,5 @@
 import { fetchSociosConCuentaCorriente, fetchSociosCuentaCorrientePages } from '@/lib/data-cuenta-corriente';
-import Search from '@/components/ui/search';
+import SearchInput from '@/components/ui/search-input';
 import StatusFilter from '@/components/ui/status-filter';
 import Pagination from '@/components/pagination';
 import CuentaCorrienteTable from '@/components/cuenta-corriente/table';
@@ -37,7 +37,10 @@ export default async function Page({
 
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:gap-2">
         <div className="flex flex-1 gap-2">
-          <Search placeholder="Buscar socio por nombre, apellido o DNI..." />
+          <div className="relative flex-1">
+            <label htmlFor="search" className="sr-only">Buscar</label>
+            <SearchInput placeholder="Buscar socio por nombre, apellido o DNI..." />
+          </div>
           <StatusFilter 
             filterKey="filtro" 
             options={[
@@ -61,4 +64,3 @@ export default async function Page({
     </main>
   );
 }
-

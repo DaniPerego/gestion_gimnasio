@@ -1,0 +1,6 @@
+nombre=Acceso Libre
+descripcion=Socios con acceso total sin vencimiento
+precio=0
+duracionMeses=120
+allowsMusculacion=on
+allowsCrossfit=on

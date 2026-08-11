@@ -1,29 +1,68 @@
 'use server';
 
 import { z } from 'zod';
-import prisma from '@/lib/prisma';
+import { TransaccionesDB, SuscripcionesDB, PlanesDB, CuentasCorrientesDB, MovimientosCCDB } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { Decimal } from '@prisma/client/runtime/library';
+
+function buildRenewalDates(baseDate: Date, duracionMeses: number) {
+  const fechaInicio = new Date(baseDate);
+  fechaInicio.setHours(12, 0, 0, 0);
+
+  const fechaFin = new Date(fechaInicio);
+  fechaFin.setMonth(fechaFin.getMonth() + duracionMeses);
+
+  if (fechaFin.getDate() !== fechaInicio.getDate()) {
+    fechaFin.setDate(0);
+  }
+
+  fechaFin.setHours(23, 59, 59, 999);
+
+  return { fechaInicio, fechaFin };
+}
 
 const FormSchema = z.object({
   id: z.string(),
   suscripcionId: z.string().min(1, 'Debe seleccionar una suscripción'),
-  monto: z.coerce.number().min(0.01, 'El monto debe ser mayor a 0'),
+  tipoPago: z.enum(['CUOTA_SUSCRIPCION', 'OTRO']),
+  monto: z.coerce.number().min(0, 'El monto no puede ser negativo'),
   metodoPago: z.string().min(1, 'Seleccione un método de pago'),
-  notas: z.string().optional(),
+  fecha: z.string().optional(),
+  notas: z.string().min(1, 'La descripción es requerida'),
   incluirCuentaCorriente: z.boolean().optional(),
   montoCuentaCorriente: z.coerce.number().optional(),
   cuentaCorrienteId: z.string().optional(),
-});
+}).refine(
+  (data) => {
+    const monto = data.monto || 0;
+    const montoCuentaC = data.montoCuentaCorriente || 0;
+    return monto + montoCuentaC > 0;
+  },
+  {
+    message: 'Debe ingresar un monto o un pago de cuenta corriente mayor a $0',
+    path: ['monto'],
+  }
+);
 
 const CreateTransaccion = FormSchema.omit({ id: true });
+
+const UpdateTransaccionSchema = z.object({
+  id: z.string(),
+  suscripcionId: z.string().min(1, 'Debe seleccionar una suscripción'),
+  tipoPago: z.enum(['CUOTA_SUSCRIPCION', 'OTRO']),
+  monto: z.coerce.number().min(0, 'El monto no puede ser negativo'),
+  metodoPago: z.string().min(1, 'Seleccione un método de pago'),
+  fecha: z.string().optional(),
+  notas: z.string().min(1, 'La descripción es requerida'),
+});
 
 export async function createTransaccion(prevState: unknown, formData: FormData) {
   const validatedFields = CreateTransaccion.safeParse({
     suscripcionId: formData.get('suscripcionId'),
+    tipoPago: formData.get('tipoPago') ?? 'OTRO',
     monto: formData.get('monto'),
     metodoPago: formData.get('metodoPago'),
+    fecha: formData.get('fecha'),
     notas: formData.get('notas'),
     incluirCuentaCorriente: formData.get('incluirCuentaCorriente') === 'true',
     montoCuentaCorriente: formData.get('montoCuentaCorriente'),
@@ -37,105 +76,177 @@ export async function createTransaccion(prevState: unknown, formData: FormData) 
     };
   }
 
-  const { suscripcionId, monto, metodoPago, notas, incluirCuentaCorriente, montoCuentaCorriente, cuentaCorrienteId } = validatedFields.data;
+  const { suscripcionId, tipoPago, monto, metodoPago, fecha, notas, incluirCuentaCorriente, montoCuentaCorriente, cuentaCorrienteId } = validatedFields.data;
 
   try {
-    // Calcular monto total y preparar notas con detalle
+    const suscripcion = SuscripcionesDB.findUnique(
+      { id: suscripcionId },
+      { plan: true }
+    );
+
+    if (!suscripcion) {
+      return {
+        message: 'La suscripción seleccionada no existe.',
+      };
+    }
+
     const montoTotal = monto + (incluirCuentaCorriente && montoCuentaCorriente ? montoCuentaCorriente : 0);
     let notasCompletas = notas || '';
     
     if (incluirCuentaCorriente && montoCuentaCorriente && montoCuentaCorriente > 0) {
-      notasCompletas = `Cuota: $${monto.toFixed(2)} + Cuenta Corriente: $${montoCuentaCorriente.toFixed(2)} = Total: $${montoTotal.toFixed(2)}${notas ? ' | ' + notas : ''}`;
+      if (monto > 0) {
+        notasCompletas = `Cuota: $${monto.toFixed(2)} + Cuenta Corriente: $${montoCuentaCorriente.toFixed(2)} = Total: $${montoTotal.toFixed(2)}${notas ? ' | ' + notas : ''}`;
+      } else {
+        notasCompletas = `Cuenta Corriente: $${montoCuentaCorriente.toFixed(2)}${notas ? ' | ' + notas : ''}`;
+      }
     }
 
-    // Crear transacción principal con monto total
-    const transaccion = await prisma.transaccion.create({
-      data: {
-        suscripcionId,
-        monto: montoTotal, // Guardar el monto total
-        metodoPago,
-        notas: notasCompletas,
-      },
+    const newTransaccion = TransaccionesDB.create({
+      suscripcionId,
+      tipoPago,
+      monto: montoTotal,
+      metodoPago,
+      fecha: fecha ? new Date(fecha) : new Date(),
+      notas: notasCompletas,
     });
 
-    // Si se incluye pago de cuenta corriente, registrar el movimiento
-    if (incluirCuentaCorriente && cuentaCorrienteId && montoCuentaCorriente && montoCuentaCorriente > 0) {
-      const cuentaCorriente = await prisma.cuentaCorriente.findUnique({
-        where: { id: cuentaCorrienteId },
+    if (tipoPago === 'CUOTA_SUSCRIPCION' && monto > 0) {
+      const fechaPagoBase = fecha ? new Date(fecha) : new Date();
+      const { fechaInicio, fechaFin } = buildRenewalDates(fechaPagoBase, suscripcion.plan?.duracionMeses || 1);
+
+      SuscripcionesDB.update({ id: suscripcionId }, {
+        fechaInicio,
+        fechaFin,
+        activa: true,
       });
+    }
+
+    if (incluirCuentaCorriente && cuentaCorrienteId && montoCuentaCorriente && montoCuentaCorriente > 0) {
+      const cuentaCorriente = CuentasCorrientesDB.findUnique({ id: cuentaCorrienteId });
 
       if (cuentaCorriente && cuentaCorriente.estado === 'ACTIVO') {
-        // El pago se aplica al saldo neto (deuda - crédito)
         let nuevoSaldoDeuda = cuentaCorriente.saldoDeuda;
         let nuevoSaldoCredito = cuentaCorriente.saldoCredito;
-        let montoPendiente = new Decimal(montoCuentaCorriente);
+        let montoPendiente = montoCuentaCorriente;
 
-        // Primero, aplicar al saldo de deuda
-        if (nuevoSaldoDeuda.greaterThan(0)) {
-          if (montoPendiente.greaterThanOrEqualTo(nuevoSaldoDeuda)) {
-            // El pago cubre toda la deuda
-            montoPendiente = montoPendiente.minus(nuevoSaldoDeuda);
-            nuevoSaldoDeuda = new Decimal(0);
+        if (nuevoSaldoDeuda > 0) {
+          if (montoPendiente >= nuevoSaldoDeuda) {
+            montoPendiente -= nuevoSaldoDeuda;
+            nuevoSaldoDeuda = 0;
           } else {
-            // El pago cubre parcialmente la deuda
-            nuevoSaldoDeuda = nuevoSaldoDeuda.minus(montoPendiente);
-            montoPendiente = new Decimal(0);
+            nuevoSaldoDeuda -= montoPendiente;
+            montoPendiente = 0;
           }
         }
 
-        // Si queda dinero después de pagar la deuda, aplicar al crédito
-        if (montoPendiente.greaterThan(0)) {
-          if (nuevoSaldoCredito.greaterThan(0)) {
-            if (montoPendiente.greaterThanOrEqualTo(nuevoSaldoCredito)) {
-              // El pago cubre todo el crédito
-              montoPendiente = montoPendiente.minus(nuevoSaldoCredito);
-              nuevoSaldoCredito = new Decimal(0);
+        if (montoPendiente > 0) {
+          if (nuevoSaldoCredito > 0) {
+            if (montoPendiente >= nuevoSaldoCredito) {
+              montoPendiente -= nuevoSaldoCredito;
+              nuevoSaldoCredito = 0;
             } else {
-              // El pago cubre parcialmente el crédito
-              nuevoSaldoCredito = nuevoSaldoCredito.minus(montoPendiente);
-              montoPendiente = new Decimal(0);
+              nuevoSaldoCredito -= montoPendiente;
+              montoPendiente = 0;
             }
           } else {
-            // No hay crédito, el monto sobrante se convierte en crédito a favor
             nuevoSaldoCredito = montoPendiente;
           }
         }
 
-        // Determinar el nuevo estado
-        const nuevoEstado = nuevoSaldoDeuda.equals(0) && nuevoSaldoCredito.equals(0)
+        const nuevoEstado = nuevoSaldoDeuda === 0 && nuevoSaldoCredito === 0
           ? 'SALDADO'
           : 'ACTIVO';
 
-        // Registrar movimiento y actualizar saldos en una transacción
-        await prisma.$transaction([
-          prisma.movimientoCuentaCorriente.create({
-            data: {
-              cuentaCorrienteId,
-              tipo: 'PAGO',
-              monto: new Decimal(montoCuentaCorriente),
-              descripcion: `Pago de cuota + cuenta corriente (Transacción #${transaccion.id})`,
-              transaccionId: transaccion.id,
-            },
-          }),
-          prisma.cuentaCorriente.update({
-            where: { id: cuentaCorrienteId },
-            data: {
-              saldoDeuda: nuevoSaldoDeuda,
-              saldoCredito: nuevoSaldoCredito,
-              estado: nuevoEstado,
-            },
-          }),
-        ]);
+        MovimientosCCDB.create({
+          cuentaCorrienteId,
+          tipo: 'PAGO',
+          monto: montoCuentaCorriente,
+          descripcion: monto > 0 
+            ? `Pago de cuota + cuenta corriente (Transacción #${newTransaccion.id})`
+            : `Pago de cuenta corriente (Transacción #${newTransaccion.id})`,
+          transaccionId: newTransaccion.id,
+        });
+
+        CuentasCorrientesDB.update({ id: cuentaCorrienteId }, {
+          saldoDeuda: nuevoSaldoDeuda,
+          saldoCredito: nuevoSaldoCredito,
+          estado: nuevoEstado,
+        });
       }
     }
+    
+    revalidatePath('/admin/transacciones');
+    revalidatePath('/admin/suscripciones');
+    revalidatePath('/admin/asistencias');
+    revalidatePath('/admin/cuenta-corriente');
+    return {
+      success: true,
+      message: 'Transacción registrada correctamente',
+      transaccion: newTransaccion,
+    };
   } catch (error) {
     console.error(error);
     return {
       message: 'Error de base de datos: No se pudo registrar la transacción.',
     };
   }
+}
+
+export async function updateTransaccion(prevState: unknown, formData: FormData) {
+  const validatedFields = UpdateTransaccionSchema.safeParse({
+    id: formData.get('id'),
+    suscripcionId: formData.get('suscripcionId'),
+    tipoPago: formData.get('tipoPago') ?? 'OTRO',
+    monto: formData.get('monto'),
+    metodoPago: formData.get('metodoPago'),
+    fecha: formData.get('fecha'),
+    notas: formData.get('notas'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Faltan campos obligatorios. Error al actualizar transacción.',
+    };
+  }
+
+  const { id, suscripcionId, tipoPago, monto, metodoPago, fecha, notas } = validatedFields.data;
+
+  try {
+    TransaccionesDB.update({ id }, {
+      suscripcionId,
+      tipoPago,
+      monto,
+      metodoPago,
+      fecha: fecha ? new Date(fecha) : undefined,
+      notas: notas || null,
+    });
+  } catch (error) {
+    console.error(error);
+    return {
+      message: 'Error de base de datos: No se pudo actualizar la transacción.',
+    };
+  }
 
   revalidatePath('/admin/transacciones');
+  revalidatePath('/admin/suscripciones');
+  revalidatePath('/admin/asistencias');
   revalidatePath('/admin/cuenta-corriente');
-  redirect('/admin/transacciones');
+  return {
+    success: true,
+    message: 'Transacción actualizada correctamente',
+  };
+}
+
+export async function deleteTransaccion(id: string) {
+  try {
+    TransaccionesDB.delete({ id });
+  } catch (error) {
+    console.error(error);
+    return {
+      message: 'Error de base de datos: No se pudo eliminar la transacción.',
+    };
+  }
+
+  revalidatePath('/admin/transacciones');
 }

@@ -1,8 +1,16 @@
-import ConfigForm from '@/components/configuracion/edit-form';
-import { getConfiguracion } from '@/lib/data';
+'use client';
 
-export default async function Page() {
-  const config = await getConfiguracion();
+import ConfigForm from '@/components/configuracion/edit-form';
+import { useEffect, useState } from 'react';
+import { ConfiguracionDB } from '@/lib/db';
+
+export default function ConfiguracionPage() {
+  const [config, setConfig] = useState<any>(null);
+
+  useEffect(() => {
+    const c = ConfiguracionDB.findFirst();
+    setConfig(c);
+  }, []);
 
   return (
     <main>

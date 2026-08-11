@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useActionState } from 'react';
 import { updateSuscripcion } from '@/lib/actions-suscripciones';
-import { Socio, Plan, Suscripcion } from '@prisma/client';
+import { Socio, Plan, Suscripcion } from '@/lib/db';
 
 type PlanSerializable = Omit<Plan, 'precio'> & { precio: number };
 type SuscripcionWithRelations = Suscripcion & { socio: Socio; plan: PlanSerializable };
@@ -18,7 +18,7 @@ export default function EditForm({ suscripcion }: { suscripcion: SuscripcionWith
       <div className="rounded-md bg-gray-50 p-4 md:p-6">
         {/* Socio (Read-only) */}
         <div className="mb-4">
-            <label className="mb-2 block text-sm font-medium">Socio</label>
+            <span className="mb-2 block text-sm font-medium text-gray-900">Socio</span>
             <input 
                 type="text" 
                 disabled 
@@ -29,7 +29,7 @@ export default function EditForm({ suscripcion }: { suscripcion: SuscripcionWith
 
         {/* Plan (Read-only) */}
         <div className="mb-4">
-            <label className="mb-2 block text-sm font-medium">Plan</label>
+            <span className="mb-2 block text-sm font-medium text-gray-900">Plan</span>
             <input 
                 type="text" 
                 disabled 
@@ -40,7 +40,7 @@ export default function EditForm({ suscripcion }: { suscripcion: SuscripcionWith
 
         {/* Fecha Inicio */}
         <div className="mb-4">
-          <label htmlFor="fechaInicio" className="mb-2 block text-sm font-medium">
+          <label htmlFor="fechaInicio" className="mb-2 block text-sm font-medium text-gray-900">
             Fecha de Inicio
           </label>
           <input
@@ -54,7 +54,7 @@ export default function EditForm({ suscripcion }: { suscripcion: SuscripcionWith
 
         {/* Fecha Fin */}
         <div className="mb-4">
-          <label htmlFor="fechaFin" className="mb-2 block text-sm font-medium">
+          <label htmlFor="fechaFin" className="mb-2 block text-sm font-medium text-gray-900">
             Fecha de Fin
           </label>
           <input
@@ -81,7 +81,7 @@ export default function EditForm({ suscripcion }: { suscripcion: SuscripcionWith
         >
           Cancelar
         </Link>
-        <button type="submit" aria-disabled={isPending} className="flex h-10 items-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+        <button type="submit" aria-disabled={isPending} className="flex h-10 items-center rounded-lg bg-[var(--primary-color)] px-4 text-sm font-medium text-white transition-colors hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
             {isPending ? 'Guardando...' : 'Guardar Cambios'}
         </button>
       </div>

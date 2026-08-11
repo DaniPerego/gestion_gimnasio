@@ -1,34 +1,17 @@
-import prisma from '@/lib/prisma';
+import { TransaccionesDB, SuscripcionesDB, SociosDB, PlanesDB } from '@/lib/db';
 import { unstable_noStore as noStore } from 'next/cache';
 
 const ITEMS_PER_PAGE = 10;
 
-export async function fetchTransacciones(
-  query: string, 
-  currentPage: number,
-  metodoPago?: string
-) {
+export async function fetchTransacciones(query: string, currentPage: number) {
   noStore();
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
   try {
-    const whereCondition: any = {
-      OR: [
-        { suscripcion: { socio: { nombre: { contains: query, mode: 'insensitive' } } } },
-        { suscripcion: { socio: { apellido: { contains: query, mode: 'insensitive' } } } },
-        { suscripcion: { socio: { dni: { contains: query, mode: 'insensitive' } } } },
-      ],
-    };
-
-    // Agregar filtro por método de pago
-    if (metodoPago && metodoPago !== 'all') {
-      whereCondition.metodoPago = metodoPago;
-    }
-
-    const transacciones = await prisma.transaccion.findMany({
+    const transacciones = TransaccionesDB.findMany({
       skip: offset,
       take: ITEMS_PER_PAGE,
-      where: whereCondition,
+      where: {},
       include: {
         suscripcion: {
           include: {
@@ -42,85 +25,143 @@ export async function fetchTransacciones(
       },
     });
     
-    // Convertir Decimal a number para evitar error de serialización
-    return transacciones.map(t => ({
+    // Filter by query on socio fields
+    const filtered = query
+      ? transacciones.filter(t => {
+          const socio = t.suscripcion?.socio;
+          if (!socio) return false;
+          const q = query.toLowerCase();
+          return (
+            socio.nombre?.toLowerCase().includes(q) ||
+            socio.apellido?.toLowerCase().includes(q) ||
+            socio.dni?.includes(q)
+          );
+        })
+      : transacciones;
+    
+    return filtered.map(t => ({
       ...t,
+      fecha: new Date(t.fecha),
       monto: Number(t.monto),
-      suscripcion: {
+      suscripcion: t.suscripcion ? {
         ...t.suscripcion,
+        fechaFin: new Date(t.suscripcion.fechaFin),
+        fechaInicio: new Date(t.suscripcion.fechaInicio),
         plan: {
           ...t.suscripcion.plan,
-          precio: Number(t.suscripcion.plan.precio)
+          precio: Number(t.suscripcion.plan?.precio || 0)
         }
-      }
+      } : undefined
     }));
   } catch (error) {
     console.error('Database Error:', error);
-    throw new Error('Failed to fetch transactions.');
+    throw new Error('Error al obtener transacciones.');
   }
 }
 
-export async function fetchTransaccionesPages(query: string, metodoPago?: string) {
+export async function fetchTransaccionesPages(query: string) {
   noStore();
   try {
-    const whereCondition: any = {
-      OR: [
-        { suscripcion: { socio: { nombre: { contains: query, mode: 'insensitive' } } } },
-        { suscripcion: { socio: { apellido: { contains: query, mode: 'insensitive' } } } },
-        { suscripcion: { socio: { dni: { contains: query, mode: 'insensitive' } } } },
-      ],
-    };
-
-    // Agregar filtro por método de pago
-    if (metodoPago && metodoPago !== 'all') {
-      whereCondition.metodoPago = metodoPago;
-    }
-
-    const count = await prisma.transaccion.count({
-      where: whereCondition,
+    const all = TransaccionesDB.findMany({
+      where: {},
+      include: {
+        suscripcion: {
+          include: {
+            socio: true,
+          },
+        },
+      },
     });
-    return Math.ceil(count / ITEMS_PER_PAGE);
+    
+    const filtered = query
+      ? all.filter(t => {
+          const socio = t.suscripcion?.socio;
+          if (!socio) return false;
+          const q = query.toLowerCase();
+          return (
+            socio.nombre?.toLowerCase().includes(q) ||
+            socio.apellido?.toLowerCase().includes(q) ||
+            socio.dni?.includes(q)
+          );
+        })
+      : all;
+    
+    return Math.ceil(filtered.length / ITEMS_PER_PAGE);
   } catch (error) {
     console.error('Database Error:', error);
-    throw new Error('Failed to fetch total number of transactions.');
+    throw new Error('Error al obtener el total de transacciones.');
   }
 }
 
 export async function fetchActiveSuscripcionesForSelect() {
   noStore();
   try {
-    const suscripciones = await prisma.suscripcion.findMany({
-      where: { activa: true },
+    const socios = SociosDB.findMany();
+    const suscripciones = SuscripcionesDB.findMany({
+      where: {},
       include: {
-        socio: {
-          include: {
-            cuentaCorriente: true,
-          },
-        },
+        socio: true,
         plan: true,
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     });
-    // Convertir Decimal a number para evitar error de serialización
-    return suscripciones.map(s => ({
-      ...s,
-      socio: {
-        ...s.socio,
-        cuentaCorriente: s.socio.cuentaCorriente ? {
-          ...s.socio.cuentaCorriente,
-          saldoDeuda: Number(s.socio.cuentaCorriente.saldoDeuda),
-          saldoCredito: Number(s.socio.cuentaCorriente.saldoCredito),
-        } : null,
-      },
-      plan: {
-        ...s.plan,
-        precio: Number(s.plan.precio)
-      }
-    }));
+    
+    // Enrich with cuenta corriente
+    const { CuentasCorrientesDB } = await import('@/lib/db');
+    return suscripciones.map(s => {
+      const cc = CuentasCorrientesDB.findUnique({ socioId: s.socioId });
+      return {
+        ...s,
+        fechaFin: new Date(s.fechaFin),
+        fechaInicio: new Date(s.fechaInicio),
+        socio: {
+          ...s.socio,
+          cuentaCorriente: cc ? {
+            ...cc,
+            saldoDeuda: Number(cc.saldoDeuda),
+            saldoCredito: Number(cc.saldoCredito),
+          } : null,
+        },
+        plan: {
+          ...s.plan,
+          precio: Number(s.plan?.precio || 0)
+        }
+      };
+    });
   } catch (error) {
     console.error('Database Error:', error);
-    throw new Error('Failed to fetch active subscriptions.');
+    throw new Error('Error al obtener suscripciones para pagos.');
+  }
+}
+
+export async function fetchTransaccionById(id: string) {
+  noStore();
+  try {
+    const transaccion = TransaccionesDB.findUnique(
+      { id },
+      { suscripcion: { include: { socio: true, plan: true } } }
+    );
+
+    if (!transaccion) {
+      throw new Error('Transacción no encontrada');
+    }
+
+    return {
+      ...transaccion,
+      fecha: new Date(transaccion.fecha),
+      monto: Number(transaccion.monto),
+      suscripcion: transaccion.suscripcion ? {
+        ...transaccion.suscripcion,
+        fechaFin: new Date(transaccion.suscripcion.fechaFin),
+        fechaInicio: new Date(transaccion.suscripcion.fechaInicio),
+        plan: {
+          ...transaccion.suscripcion.plan,
+          precio: Number(transaccion.suscripcion.plan?.precio || 0)
+        }
+      } : undefined
+    };
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Error al obtener la transacción.');
   }
 }

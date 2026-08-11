@@ -1,33 +1,22 @@
-import prisma from '@/lib/prisma';
+import { UsuariosDB } from '@/lib/db';
 import { unstable_noStore as noStore } from 'next/cache';
 
 const ITEMS_PER_PAGE = 10;
 
-export async function fetchUsuarios(
-  query: string, 
-  currentPage: number,
-  rol?: string
-) {
+export async function fetchUsuarios(query: string, currentPage: number) {
   noStore();
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
   try {
-    const whereCondition: any = {
-      OR: [
-        { nombre: { contains: query, mode: 'insensitive' } },
-        { email: { contains: query, mode: 'insensitive' } },
-      ],
-    };
-
-    // Agregar filtro por rol
-    if (rol && rol !== 'all') {
-      whereCondition.rol = rol;
-    }
-
-    const usuarios = await prisma.usuario.findMany({
+    const usuarios = UsuariosDB.findMany({
       skip: offset,
       take: ITEMS_PER_PAGE,
-      where: whereCondition,
+      where: {
+        OR: [
+          { nombre: query },
+          { email: query },
+        ],
+      },
       orderBy: {
         createdAt: 'desc',
       },
@@ -39,23 +28,16 @@ export async function fetchUsuarios(
   }
 }
 
-export async function fetchUsuariosPages(query: string, rol?: string) {
+export async function fetchUsuariosPages(query: string) {
   noStore();
   try {
-    const whereCondition: any = {
-      OR: [
-        { nombre: { contains: query, mode: 'insensitive' } },
-        { email: { contains: query, mode: 'insensitive' } },
-      ],
-    };
-
-    // Agregar filtro por rol
-    if (rol && rol !== 'all') {
-      whereCondition.rol = rol;
-    }
-
-    const count = await prisma.usuario.count({
-      where: whereCondition,
+    const count = UsuariosDB.count({
+      where: {
+        OR: [
+          { nombre: query },
+          { email: query },
+        ],
+      },
     });
     return Math.ceil(count / ITEMS_PER_PAGE);
   } catch (error) {
@@ -67,9 +49,7 @@ export async function fetchUsuariosPages(query: string, rol?: string) {
 export async function fetchUsuarioById(id: string) {
   noStore();
   try {
-    const usuario = await prisma.usuario.findUnique({
-      where: { id },
-    });
+    const usuario = UsuariosDB.findUnique({ id });
     return usuario;
   } catch (error) {
     console.error('Database Error:', error);

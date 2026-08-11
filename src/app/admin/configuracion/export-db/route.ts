@@ -1,31 +1,21 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { SociosDB, SuscripcionesDB, TransaccionesDB, PlanesDB, UsuariosDB, AsistenciasDB, ConfiguracionDB } from '@/lib/db';
 
 export async function GET() {
-  // Exportar todas las tablas principales
-  const socios = await prisma.socio.findMany();
-  const suscripciones = await prisma.suscripcion.findMany();
-  const transacciones = await prisma.transaccion.findMany();
-  const planes = await prisma.plan.findMany();
-  const usuarios = await prisma.usuario.findMany();
-  const asistencias = await prisma.asistencia.findMany();
-  const configuracion = await prisma.configuracion.findMany();
-
-  const data = {
-    socios,
-    suscripciones,
-    transacciones,
-    planes,
-    usuarios,
-    asistencias,
-    configuracion,
-  };
-
-  return new NextResponse(JSON.stringify(data), {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'Content-Disposition': 'attachment; filename="gimnasio-backup.json"',
-    },
+  // For demo mode, we return the localStorage keys that the client should export
+  // The actual export happens client-side since we can't access localStorage from the server
+  return NextResponse.json({ 
+    message: 'Demo mode: use client-side export',
+    keys: [
+      'gym_socios',
+      'gym_suscripciones', 
+      'gym_transacciones',
+      'gym_planes',
+      'gym_usuarios',
+      'gym_asistencias',
+      'gym_configuracion',
+      'gym_cuentas_corrientes',
+      'gym_movimientos_cc',
+    ]
   });
 }

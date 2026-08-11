@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Gestión de Gimnasio - White Label
 
-## Getting Started
+Sistema de gestión de gimnasios multi-tenant, listo para desplegar como instancia separada para cada cliente.
 
-First, run the development server:
+## Características
+
+- **Multi-tenant por diseño**: Cada instancia tiene su propia base de datos SQLite (desarrollo) o PostgreSQL (producción)
+- **Configuración white-label**: Nombre del gimnasio, colores, logo y fondo configurables desde `/admin/configuracion`
+- **PWA completa**: Manifiesto e iconos dinámicos generados desde la configuración
+- **Modo Kiosco**: Pantalla de check-in por DNI para tablets en la entrada
+- **Módulos completos**:
+  - Socios (CRUD)
+  - Planes de suscripción
+  - Suscripciones con gestión de vencimientos
+  - Transacciones y pagos con tickets
+  - Asistencias con filtrado por modalidad
+  - Cuenta corriente por socio
+  - Reportes financieros
+  - Gestión de usuarios con permisos granulares
+
+## Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Base de datos**: SQLite (dev) / PostgreSQL (producción)
+- **ORM**: Prisma
+- **Auth**: NextAuth v5
+- **Estilos**: Tailwind CSS v4
+- **Theme**: Dark/Light mode con next-themes
+
+## Instalación
 
 ```bash
+# Instalar dependencias
+npm install
+
+# Crear base de datos y datos iniciales
+npx prisma migrate dev
+npx prisma db seed
+
+# Iniciar servidor de desarrollo
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Variables de entorno
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Copia `.env.example` a `.env`:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cp .env.example .env
+```
 
-## Learn More
+Para desarrollo local con SQLite (ya configurado):
+```
+DATABASE_URL="file:./dev.db"
+```
 
-To learn more about Next.js, take a look at the following resources:
+Para producción en Vercel con PostgreSQL:
+```
+DATABASE_URL="postgres://user:password@host:5432/dbname?sslmode=require"
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Usuario por defecto
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Email**: admin@gimnasio.com
+- **Contraseña**: admin123
 
-## Deploy on Vercel
+> ⚠️ Cambiar la contraseña después del primer login en producción.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Despliegue en Vercel
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Subir a un repositorio GitHub
+2. Conectar el repositorio en Vercel
+3. Configurar la variable de entorno `DATABASE_URL` con tu PostgreSQL (Prisma Data Platform, Neon, Supabase, etc.)
+4. Vercel ejecutará `prisma migrate deploy` automáticamente
+
+## Estructura del proyecto
+
+```
+src/
+├── app/                    # Rutas Next.js App Router
+│   ├── admin/              # Panel de administración
+│   ├── api/                # API routes
+│   ├── kiosco/             # Modo kiosco (check-in)
+│   └── login/              # Autenticación
+├── components/             # Componentes React
+│   ├── admin/              # Navegación
+│   ├── socios/             # CRUD socios
+│   ├── planes/             # CRUD planes
+│   ├── suscripciones/      # CRUD suscripciones
+│   ├── transacciones/      # CRUD transacciones
+│   ├── asistencias/        # Control de asistencia
+│   ├── cuenta-corriente/   # Cuenta corriente
+│   ├── reportes/           # Reportes financieros
+│   ├── configuracion/      # Configuración white-label
+│   └── ui/                 # Componentes genéricos
+├── lib/                    # Utilidades y lógica
+│   ├── data-*.ts           # Queries a base de datos
+│   ├── actions-*.ts        # Server Actions
+│   └── prisma.ts           # Cliente Prisma singleton
+└── auth.ts                 # Configuración NextAuth
+```
+
+## Licencia
+
+Proyecto privado - DaniPerego

@@ -5,12 +5,17 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --color-bendito-red: #e74c3c;
+  --color-bendito-dark: #333333;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-open-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+  --color-bendito-red: var(--color-bendito-red);
+  --color-bendito-dark: var(--color-bendito-dark);
 }
 
 .dark {
@@ -18,15 +23,76 @@
   --foreground: #ededed;
 }
 
-/* @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-} */
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-x: hidden;
+  position: relative;
+  width: 100%;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+/* Estilos personalizados inspirados en Bendito Cross */
+.glass-card {
+  background: rgba(73, 73, 73, 0.5);
+  backdrop-filter: blur(10px);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-bendito {
+  background-color: var(--color-bendito-red);
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.btn-bendito:hover {
+  background-color: #c0392b;
+  transform: translateY(-2px);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+/* Prevenir zoom en inputs - Chrome móvil */
+input, select, textarea, button {
+  font-size: 16px !important;
+}
+
+@media screen and (max-width: 768px) {
+  input, select, textarea, button {
+    font-size: 16px !important;
+  }
+}
+
+/* Estilos para links del sidebar con color secundario translúcido */
+.nav-link {
+  background-color: rgba(var(--secondary-color-rgb), 0.3);
+}
+
+.nav-link:hover {
+  background-color: rgba(var(--secondary-color-rgb), 0.5);
 }

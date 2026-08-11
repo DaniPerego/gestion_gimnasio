@@ -1,10 +1,9 @@
 'use server';
 
 import { z } from 'zod';
-import prisma from '@/lib/prisma';
+import { UsuariosDB } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import bcrypt from 'bcryptjs';
 
 const FormSchema = z.object({
   id: z.string(),
@@ -51,24 +50,23 @@ export async function createUsuario(prevState: unknown, formData: FormData) {
   }
 
   const { nombre, email, password, rol, permisoSocios, permisoPlanes, permisoSuscripciones, permisoAsistencias, permisoReportes, permisoConfiguracion, permisoUsuarios, permisoTransacciones } = validatedFields.data;
-  const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
-    await prisma.usuario.create({
-      data: {
-        nombre,
-        email,
-        password: hashedPassword,
-        rol,
-        permisoSocios: permisoSocios === 'on',
-        permisoPlanes: permisoPlanes === 'on',
-        permisoSuscripciones: permisoSuscripciones === 'on',
-        permisoAsistencias: permisoAsistencias === 'on',
-        permisoReportes: permisoReportes === 'on',
-        permisoConfiguracion: permisoConfiguracion === 'on',
-        permisoUsuarios: permisoUsuarios === 'on',
-        permisoTransacciones: permisoTransacciones === 'on',
-      },
+    UsuariosDB.create({
+      nombre,
+      email,
+      password,
+      rol,
+      permisoSocios: permisoSocios === 'on',
+      permisoPlanes: permisoPlanes === 'on',
+      permisoSuscripciones: permisoSuscripciones === 'on',
+      permisoAsistencias: permisoAsistencias === 'on',
+      permisoReportes: permisoReportes === 'on',
+      permisoConfiguracion: permisoConfiguracion === 'on',
+      permisoUsuarios: permisoUsuarios === 'on',
+      permisoTransacciones: permisoTransacciones === 'on',
+      esProfesorCrossfit: false,
+      esProfesorMusculacion: false,
     });
   } catch {
     return {
@@ -83,7 +81,6 @@ export async function createUsuario(prevState: unknown, formData: FormData) {
 export async function updateUsuario(id: string, prevState: unknown, formData: FormData) {
   const passwordRaw = formData.get('password') as string;
   
-  // Si la contraseña está vacía, no la validamos ni la actualizamos
   const dataToValidate = {
     nombre: formData.get('nombre'),
     email: formData.get('email'),
@@ -99,7 +96,6 @@ export async function updateUsuario(id: string, prevState: unknown, formData: Fo
     ...(passwordRaw ? { password: passwordRaw } : {}),
   };
 
-  // Usamos un esquema dinámico dependiendo de si hay password o no
   const schema = passwordRaw 
     ? UpdateUsuario.extend({ password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres.') })
     : UpdateUsuario;
@@ -115,7 +111,6 @@ export async function updateUsuario(id: string, prevState: unknown, formData: Fo
 
   const { nombre, email, rol, password, permisoSocios, permisoPlanes, permisoSuscripciones, permisoAsistencias, permisoReportes, permisoConfiguracion, permisoUsuarios, permisoTransacciones } = validatedFields.data;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dataToUpdate: any = {
     nombre,
     email,
@@ -131,14 +126,11 @@ export async function updateUsuario(id: string, prevState: unknown, formData: Fo
   };
 
   if (password) {
-    dataToUpdate.password = await bcrypt.hash(password, 10);
+    dataToUpdate.password = password;
   }
 
   try {
-    await prisma.usuario.update({
-      where: { id },
-      data: dataToUpdate,
-    });
+    UsuariosDB.update({ id }, dataToUpdate);
   } catch {
     return { message: 'Error de base de datos: No se pudo actualizar el usuario.' };
   }
@@ -149,9 +141,7 @@ export async function updateUsuario(id: string, prevState: unknown, formData: Fo
 
 export async function deleteUsuario(id: string) {
   try {
-    await prisma.usuario.delete({
-      where: { id },
-    });
+    UsuariosDB.delete({ id });
     revalidatePath('/admin/usuarios');
   } catch (error) {
     console.error('Error deleting usuario:', error);

@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import prisma from '@/lib/prisma';
+import { AsistenciasDB, SociosDB, SuscripcionesDB, PlanesDB } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
 const CheckInSchema = z.object({
@@ -40,21 +40,7 @@ export async function registrarAsistencia(prevState: CheckInState, formData: For
 
   try {
     // 1. Buscar al socio
-    const socio = await prisma.socio.findUnique({
-      where: { dni },
-      include: {
-        suscripciones: {
-          where: {
-            activa: true,
-          },
-          orderBy: {
-            fechaFin: 'desc',
-          },
-          take: 1,
-        },
-      },
-    });
-
+    const socio = SociosDB.findUnique({ dni });
     if (!socio) {
       return {
         message: 'Socio no encontrado.',
@@ -62,82 +48,98 @@ export async function registrarAsistencia(prevState: CheckInState, formData: For
       };
     }
 
-    // 2. Verificar estado de suscripción (Lógica Mes Calendario)
+    // 2. Verificar estado de suscripción
     let estadoSuscripcion: 'ACTIVA' | 'VENCIDA' | 'SIN_SUSCRIPCION' | 'PERSUADIDO' = 'SIN_SUSCRIPCION';
     let diasVencimiento = 0;
+    let mensajeEstado = '';
     const now = new Date();
-    const currentDay = now.getDate();
+    now.setHours(0, 0, 0, 0);
 
     if (socio.esLibre) {
         estadoSuscripcion = 'ACTIVA';
-        // No calculamos días de vencimiento porque es libre
+        mensajeEstado = 'Socio Libre - Acceso Permitido';
     } else {
-        // Buscar suscripción activa que cubra la fecha actual
-        const suscripcionActiva = socio.suscripciones.find(s => {
-            const fechaFin = new Date(s.fechaFin);
-            // Ajustar fechaFin al final del día para comparación justa
-            fechaFin.setHours(23, 59, 59, 999);
-            return fechaFin >= now;
-        });
+        const suscripciones = SuscripcionesDB.findMany({ where: {} })
+          .filter(s => s.socioId === socio.id && s.activa)
+          .sort((a, b) => new Date(b.fechaFin).getTime() - new Date(a.fechaFin).getTime());
+        
+        const ultimaSuscripcion = suscripciones[0];
 
-        if (suscripcionActiva) {
-            estadoSuscripcion = 'ACTIVA';
-            const fechaFin = new Date(suscripcionActiva.fechaFin);
+        if (ultimaSuscripcion) {
+            const fechaFin = new Date(ultimaSuscripcion.fechaFin);
+            fechaFin.setHours(0, 0, 0, 0);
+
             const diffTime = fechaFin.getTime() - now.getTime();
-            diasVencimiento = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        } else {
-            // Si no tiene suscripción vigente, aplicamos lógica de días del mes
-            if (currentDay <= 10) {
-                estadoSuscripcion = 'ACTIVA'; // Periodo de gracia / pago
-            } else if (currentDay <= 15) {
-                estadoSuscripcion = 'PERSUADIDO'; // Alerta naranja
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays >= 0) {
+                diasVencimiento = diffDays;
+                
+                if (diffDays <= 5 && diffDays > 0) {
+                    estadoSuscripcion = 'PERSUADIDO';
+                    mensajeEstado = `Su cuota vence en ${diffDays} día${diffDays === 1 ? '' : 's'}. Regularice su situación pronto.`;
+                } else if (diffDays === 0) {
+                    estadoSuscripcion = 'PERSUADIDO';
+                    mensajeEstado = 'Su cuota vence hoy. Regularice su situación con la administración.';
+                } else {
+                    estadoSuscripcion = 'ACTIVA';
+                    mensajeEstado = 'Bienvenido/a';
+                }
             } else {
-                estadoSuscripcion = 'VENCIDA'; // Alerta roja
+                const diasVencidos = Math.abs(diffDays);
+                diasVencimiento = -diasVencidos;
+
+                estadoSuscripcion = 'VENCIDA';
+                mensajeEstado = `Su cuota venció hace ${diasVencidos} día${diasVencidos === 1 ? '' : 's'}. Diríjase a la administración para regularizar su situación.`;
             }
+        } else {
+            estadoSuscripcion = 'SIN_SUSCRIPCION';
+            mensajeEstado = 'No posee suscripción activa.';
         }
     }
 
-    // 3. Registrar asistencia
-    await prisma.asistencia.create({
-      data: {
+    // 3. Registrar asistencia y Retornar Resultado
+    if (estadoSuscripcion === 'ACTIVA' || estadoSuscripcion === 'PERSUADIDO') {
+      AsistenciasDB.create({
         socioId: socio.id,
-      },
-    });
+        fecha: new Date(),
+      });
 
-    revalidatePath('/admin'); 
-    revalidatePath('/admin/asistencias');
+      revalidatePath('/admin'); 
+      revalidatePath('/admin/asistencias');
 
-    let message = 'Asistencia registrada correctamente.';
-    let status: 'success' | 'warning' | 'error' = 'success';
+      let statusResponse: 'success' | 'warning' | 'error' = 'success';
+      
+      if (estadoSuscripcion === 'PERSUADIDO') {
+        statusResponse = 'warning';
+      } else {
+        statusResponse = 'success';
+      }
 
-    if (socio.esLibre) {
-        message = 'Socio LIBRE (Acceso Ilimitado).';
-        status = 'success';
-    } else if (estadoSuscripcion === 'VENCIDA') {
-      message = 'ALERTA: Cuota Vencida / Suspendida.';
-      status = 'error'; // Rojo
-    } else if (estadoSuscripcion === 'PERSUADIDO') {
-      message = 'ALERTA: Cuota por vencer (Persuasión).';
-      status = 'warning'; // Naranja
-    } else if (estadoSuscripcion === 'ACTIVA' && !socio.suscripciones.some(s => new Date(s.fechaFin) >= now)) {
-        message = 'Socio Activo (Periodo de pago 1-10).';
-        status = 'success';
+      return {
+        message: mensajeEstado,
+        status: statusResponse,
+        socio: {
+          nombre: socio.nombre,
+          apellido: socio.apellido,
+          telefono: socio.telefono,
+          estadoSuscripcion,
+          diasVencimiento,
+        },
+      };
     } else {
-        message = 'Socio Activo (Cuota al día).';
-        status = 'success';
+      return {
+        message: mensajeEstado,
+        status: 'error',
+        socio: {
+          nombre: socio.nombre,
+          apellido: socio.apellido,
+          telefono: socio.telefono,
+          estadoSuscripcion,
+          diasVencimiento,
+        },
+      };
     }
-
-    return {
-      message,
-      status,
-      socio: {
-        nombre: socio.nombre,
-        apellido: socio.apellido,
-        telefono: socio.telefono,
-        estadoSuscripcion,
-        diasVencimiento,
-      },
-    };
 
   } catch (error) {
     console.error('Error al registrar asistencia:', error);

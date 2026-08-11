@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import prisma from '@/lib/prisma';
+import { SuscripcionesDB, PlanesDB } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -31,41 +31,56 @@ export async function createSuscripcion(prevState: unknown, formData: FormData) 
   const { socioId, planId, fechaInicio } = validatedFields.data;
 
   try {
-    // Obtener detalles del plan para calcular fecha fin
-    const plan = await prisma.plan.findUnique({
-      where: { id: planId },
-    });
+    const plan = PlanesDB.findUnique({ id: planId });
 
     if (!plan) {
       return { message: 'El plan seleccionado no existe.' };
     }
 
     const fechaInicioDate = new Date(fechaInicio);
-    
-    // Lógica de Mes Calendario:
-    // La suscripción termina el último día del mes correspondiente a la duración.
-    // Ejemplo: Inicio 3 Dic, Duración 1 mes -> Fin 31 Dic.
-    // Ejemplo: Inicio 20 Dic, Duración 1 mes -> Fin 31 Dic.
+    fechaInicioDate.setHours(12, 0, 0, 0);
+
     const fechaFinDate = new Date(fechaInicioDate);
-    // Sumamos la duración en meses (menos 1 porque el mes actual cuenta)
-    // Si es 1 mes, nos quedamos en el mes actual. Si son 2, vamos al siguiente.
-    fechaFinDate.setMonth(fechaFinDate.getMonth() + plan.duracionMeses - 1);
-    // Establecemos al último día del mes
-    fechaFinDate.setMonth(fechaFinDate.getMonth() + 1);
-    fechaFinDate.setDate(0); // Día 0 del siguiente mes es el último del actual
-    
-    // Ajustar horas para evitar problemas de zona horaria (opcional, pero recomendado setear a final del día)
+    fechaFinDate.setMonth(fechaFinDate.getMonth() + plan.duracionMeses);
+    if (fechaFinDate.getDate() !== fechaInicioDate.getDate()) {
+      fechaFinDate.setDate(0);
+    }
     fechaFinDate.setHours(23, 59, 59, 999);
 
-    await prisma.suscripcion.create({
-      data: {
-        socioId,
+    const suscripcionActiva = SuscripcionesDB.findFirst({
+      socioId,
+      activa: true,
+    });
+
+    if (suscripcionActiva) {
+      SuscripcionesDB.update({ id: suscripcionActiva.id }, {
         planId,
         fechaInicio: fechaInicioDate,
         fechaFin: fechaFinDate,
         activa: true,
-      },
-    });
+      });
+    } else {
+      const suscripcionInactiva = SuscripcionesDB.findFirst({
+        socioId,
+        planId,
+        activa: false,
+      });
+      if (suscripcionInactiva) {
+        SuscripcionesDB.update({ id: suscripcionInactiva.id }, {
+          fechaInicio: fechaInicioDate,
+          fechaFin: fechaFinDate,
+          activa: true,
+        });
+      } else {
+        SuscripcionesDB.create({
+          socioId,
+          planId,
+          fechaInicio: fechaInicioDate,
+          fechaFin: fechaFinDate,
+          activa: true,
+        });
+      }
+    }
   } catch (error) {
     console.error(error);
     return {
@@ -79,14 +94,11 @@ export async function createSuscripcion(prevState: unknown, formData: FormData) 
 
 export async function cancelSuscripcion(id: string) {
   try {
-    await prisma.suscripcion.update({
-      where: { id },
-      data: { activa: false },
-    });
+    SuscripcionesDB.update({ id }, { activa: false });
     revalidatePath('/admin/suscripciones');
   } catch (error) {
     console.error('Database Error:', error);
-    throw new Error('Failed to cancel subscription.');
+    throw new Error('Error de base de datos: No se pudo cancelar la suscripción.');
   }
 }
 
@@ -113,15 +125,11 @@ export async function updateSuscripcion(id: string, prevState: unknown, formData
   try {
     const fechaInicioDate = new Date(fechaInicio);
     const fechaFinDate = new Date(fechaFin);
-    // Set end of day for fechaFin
     fechaFinDate.setHours(23, 59, 59, 999);
 
-    await prisma.suscripcion.update({
-      where: { id },
-      data: {
-        fechaInicio: fechaInicioDate,
-        fechaFin: fechaFinDate,
-      },
+    SuscripcionesDB.update({ id }, {
+      fechaInicio: fechaInicioDate,
+      fechaFin: fechaFinDate,
     });
   } catch {
     return {

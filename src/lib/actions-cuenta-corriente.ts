@@ -1,11 +1,11 @@
 'use server';
 
 import { z } from 'zod';
-import prisma from './prisma';
+import { SociosDB, CuentasCorrientesDB, MovimientosCCDB } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
-import { Decimal } from '@prisma/client/runtime/library';
 
-// Schemas de validación
+// === SCHEMAS ===
+
 const AbrirCuentaCorrienteSchema = z.object({
   socioId: z.string().min(1, 'El socio es requerido'),
   descripcion: z.string().optional().nullable(),
@@ -15,15 +15,20 @@ const RegistrarMovimientoSchema = z.object({
   cuentaCorrienteId: z.string().min(1, 'La cuenta corriente es requerida'),
   tipo: z.enum(['DEUDA', 'CREDITO', 'PAGO', 'AJUSTE']),
   monto: z.coerce.number().positive('El monto debe ser mayor a 0'),
-  descripcion: z.string().min(1, 'La descripción es requerida'),
-  transaccionId: z.string().optional(),
+  descripcion: z.string().min(1, 'La descripción es requerida').or(z.literal('')).transform(val => val || 'Sin descripción'),
+  transaccionId: z.string().optional().nullable(),
 });
 
 const CerrarCuentaCorrienteSchema = z.object({
   cuentaCorrienteId: z.string().min(1, 'La cuenta corriente es requerida'),
 });
 
-// Types
+const ReabrirCuentaCorrienteSchema = z.object({
+  cuentaCorrienteId: z.string().min(1, 'La cuenta corriente es requerida'),
+});
+
+// === TYPES ===
+
 type AbrirCuentaCorrienteState = {
   errors?: {
     socioId?: string[];
@@ -52,18 +57,22 @@ type CerrarCuentaCorrienteState = {
   success?: boolean;
 };
 
-/**
- * Abrir una cuenta corriente para un socio
- */
+type ReabrirCuentaCorrienteState = {
+  errors?: {
+    cuentaCorrienteId?: string[];
+  };
+  message?: string;
+  success?: boolean;
+};
+
+// === ABRIR CUENTA CORRIENTE ===
+
 export async function abrirCuentaCorriente(
   prevState: AbrirCuentaCorrienteState,
   formData: FormData
 ): Promise<AbrirCuentaCorrienteState> {
-  // Validar datos
   const rawSocioId = formData.get('socioId');
   const rawDescripcion = formData.get('descripcion');
-  
-  console.log('abrirCuentaCorriente - datos recibidos:', { rawSocioId, rawDescripcion });
   
   const validatedFields = AbrirCuentaCorrienteSchema.safeParse({
     socioId: rawSocioId,
@@ -71,7 +80,6 @@ export async function abrirCuentaCorriente(
   });
 
   if (!validatedFields.success) {
-    console.error('Errores de validación:', validatedFields.error.flatten().fieldErrors);
     return {
       errors: validatedFields.error.flatten().fieldErrors,
       message: 'Error de validación. Por favor revise los campos.',
@@ -82,10 +90,7 @@ export async function abrirCuentaCorriente(
   const { socioId, descripcion } = validatedFields.data;
 
   try {
-    // Verificar si el socio existe
-    const socio = await prisma.socio.findUnique({
-      where: { id: socioId },
-    });
+    const socio = SociosDB.findUnique({ id: socioId });
 
     if (!socio) {
       return {
@@ -94,10 +99,7 @@ export async function abrirCuentaCorriente(
       };
     }
 
-    // Verificar si ya tiene cuenta corriente
-    const cuentaExistente = await prisma.cuentaCorriente.findUnique({
-      where: { socioId },
-    });
+    const cuentaExistente = CuentasCorrientesDB.findUnique({ socioId });
 
     if (cuentaExistente) {
       return {
@@ -106,15 +108,12 @@ export async function abrirCuentaCorriente(
       };
     }
 
-    // Crear cuenta corriente
-    await prisma.cuentaCorriente.create({
-      data: {
-        socioId,
-        descripcion: descripcion || 'Cuenta corriente abierta',
-        saldoDeuda: new Decimal(0),
-        saldoCredito: new Decimal(0),
-        estado: 'ACTIVO',
-      },
+    CuentasCorrientesDB.create({
+      socioId,
+      descripcion: descripcion || 'Cuenta corriente abierta',
+      saldoDeuda: 0,
+      saldoCredito: 0,
+      estado: 'ACTIVO',
     });
 
     revalidatePath(`/admin/cuenta-corriente/${socioId}`);
@@ -133,26 +132,59 @@ export async function abrirCuentaCorriente(
   }
 }
 
-/**
- * Registrar un movimiento en la cuenta corriente
- */
+// === VERSIÓN DIRECTA (para uso desde cliente) ===
+
+export async function abrirCuentaCorrienteDirecto(socioId: string, descripcion?: string) {
+  try {
+    const socio = SociosDB.findUnique({ id: socioId });
+
+    if (!socio) {
+      throw new Error('El socio no existe.');
+    }
+
+    const cuentaExistente = CuentasCorrientesDB.findUnique({ socioId });
+
+    if (cuentaExistente) {
+      throw new Error('El socio ya tiene una cuenta corriente activa.');
+    }
+
+    CuentasCorrientesDB.create({
+      socioId,
+      descripcion: descripcion || 'Cuenta corriente abierta',
+      saldoDeuda: 0,
+      saldoCredito: 0,
+      estado: 'ACTIVO',
+    });
+
+    revalidatePath(`/admin/cuenta-corriente/${socioId}`);
+    revalidatePath('/admin/cuenta-corriente');
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error al abrir cuenta corriente:', error);
+    throw error;
+  }
+}
+
+// === REGISTRAR MOVIMIENTO ===
+
 export async function registrarMovimiento(
   prevState: RegistrarMovimientoState,
   formData: FormData
 ): Promise<RegistrarMovimientoState> {
-  // Validar datos
   const validatedFields = RegistrarMovimientoSchema.safeParse({
     cuentaCorrienteId: formData.get('cuentaCorrienteId'),
     tipo: formData.get('tipo'),
     monto: formData.get('monto'),
     descripcion: formData.get('descripcion'),
-    transaccionId: formData.get('transaccionId') || undefined,
+    transaccionId: formData.get('transaccionId'),
   });
 
   if (!validatedFields.success) {
+    console.error('Error de validación:', validatedFields.error);
     return {
       errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Error de validación. Por favor revise los campos.',
+      message: 'Error de validación. Verifica los campos.',
       success: false,
     };
   }
@@ -160,96 +192,78 @@ export async function registrarMovimiento(
   const { cuentaCorrienteId, tipo, monto, descripcion, transaccionId } = validatedFields.data;
 
   try {
-    // Obtener cuenta corriente actual
-    const cuentaCorriente = await prisma.cuentaCorriente.findUnique({
-      where: { id: cuentaCorrienteId },
-    });
+    const cuentaCorriente = CuentasCorrientesDB.findUnique({ id: cuentaCorrienteId });
 
     if (!cuentaCorriente) {
+      console.error('Cuenta corriente no encontrada:', cuentaCorrienteId);
       return {
         message: 'La cuenta corriente no existe.',
         success: false,
       };
     }
 
-    if (cuentaCorriente.estado !== 'ACTIVO') {
+    if (cuentaCorriente.estado === 'CERRADO') {
       return {
-        message: 'La cuenta corriente no está activa.',
+        message: 'No se pueden registrar movimientos en una cuenta cerrada. Debe reabrirla primero.',
         success: false,
       };
     }
 
-    // Calcular nuevos saldos
     let nuevoSaldoDeuda = cuentaCorriente.saldoDeuda;
     let nuevoSaldoCredito = cuentaCorriente.saldoCredito;
-    const montoDecimal = new Decimal(monto);
 
     switch (tipo) {
       case 'DEUDA':
-        // Aumenta la deuda
-        nuevoSaldoDeuda = nuevoSaldoDeuda.plus(montoDecimal);
+        nuevoSaldoDeuda += monto;
         break;
       case 'CREDITO':
-        // Aumenta el crédito a favor
-        nuevoSaldoCredito = nuevoSaldoCredito.plus(montoDecimal);
+        nuevoSaldoCredito += monto;
         break;
       case 'PAGO':
-        // Reduce deuda o crédito según corresponda
-        if (nuevoSaldoDeuda.greaterThan(0)) {
-          nuevoSaldoDeuda = nuevoSaldoDeuda.minus(montoDecimal).lessThan(0)
-            ? new Decimal(0)
-            : nuevoSaldoDeuda.minus(montoDecimal);
-        } else if (nuevoSaldoCredito.greaterThan(0)) {
-          nuevoSaldoCredito = nuevoSaldoCredito.minus(montoDecimal).lessThan(0)
-            ? new Decimal(0)
-            : nuevoSaldoCredito.minus(montoDecimal);
+        let montoPendiente = monto;
+        
+        if (nuevoSaldoDeuda > 0) {
+          if (montoPendiente >= nuevoSaldoDeuda) {
+            montoPendiente -= nuevoSaldoDeuda;
+            nuevoSaldoDeuda = 0;
+          } else {
+            nuevoSaldoDeuda -= montoPendiente;
+            montoPendiente = 0;
+          }
+        }
+        
+        if (montoPendiente > 0 && nuevoSaldoCredito > 0) {
+          if (montoPendiente >= nuevoSaldoCredito) {
+            montoPendiente -= nuevoSaldoCredito;
+            nuevoSaldoCredito = 0;
+          } else {
+            nuevoSaldoCredito -= montoPendiente;
+            montoPendiente = 0;
+          }
         }
         break;
       case 'AJUSTE':
-        // Ajuste manual - puede ser positivo o negativo
-        // Por simplicidad, ajustamos la deuda
-        nuevoSaldoDeuda = nuevoSaldoDeuda.plus(montoDecimal);
-        if (nuevoSaldoDeuda.lessThan(0)) {
-          nuevoSaldoDeuda = new Decimal(0);
-        }
         break;
     }
 
-    // Crear movimiento y actualizar saldos en transacción
-    await prisma.$transaction([
-      prisma.movimientoCuentaCorriente.create({
-        data: {
-          cuentaCorrienteId,
-          tipo,
-          monto: montoDecimal,
-          descripcion,
-          transaccionId: transaccionId || null,
-        },
-      }),
-      prisma.cuentaCorriente.update({
-        where: { id: cuentaCorrienteId },
-        data: {
-          saldoDeuda: nuevoSaldoDeuda,
-          saldoCredito: nuevoSaldoCredito,
-          // Auto-cerrar si ambos saldos son 0
-          estado:
-            nuevoSaldoDeuda.equals(0) && nuevoSaldoCredito.equals(0)
-              ? 'SALDADO'
-              : 'ACTIVO',
-        },
-      }),
-    ]);
+    const nuevoEstado = cuentaCorriente.estado === 'CERRADO' ? 'CERRADO' : 'ACTIVO';
 
-    const socio = await prisma.cuentaCorriente.findUnique({
-      where: { id: cuentaCorrienteId },
-      select: { socioId: true },
+    MovimientosCCDB.create({
+      cuentaCorrienteId,
+      tipo,
+      monto,
+      descripcion,
+      transaccionId: transaccionId || null,
     });
 
-    if (socio) {
-      revalidatePath(`/admin/socios/${socio.socioId}/edit`);
-      revalidatePath('/admin/socios');
-      revalidatePath('/admin/transacciones');
-    }
+    CuentasCorrientesDB.update({ id: cuentaCorrienteId }, {
+      saldoDeuda: nuevoSaldoDeuda,
+      saldoCredito: nuevoSaldoCredito,
+      estado: nuevoEstado,
+    });
+
+    revalidatePath(`/admin/cuenta-corriente/${cuentaCorriente.socioId}`);
+    revalidatePath('/admin/cuenta-corriente');
 
     return {
       message: 'Movimiento registrado exitosamente.',
@@ -258,20 +272,18 @@ export async function registrarMovimiento(
   } catch (error) {
     console.error('Error al registrar movimiento:', error);
     return {
-      message: 'Error al registrar movimiento.',
+      message: `Error al registrar movimiento: ${error instanceof Error ? error.message : 'Error desconocido'}`,
       success: false,
     };
   }
 }
 
-/**
- * Cerrar una cuenta corriente (solo si saldo = 0)
- */
+// === CERRAR CUENTA CORRIENTE ===
+
 export async function cerrarCuentaCorriente(
   prevState: CerrarCuentaCorrienteState,
   formData: FormData
 ): Promise<CerrarCuentaCorrienteState> {
-  // Validar datos
   const validatedFields = CerrarCuentaCorrienteSchema.safeParse({
     cuentaCorrienteId: formData.get('cuentaCorrienteId'),
   });
@@ -287,10 +299,7 @@ export async function cerrarCuentaCorriente(
   const { cuentaCorrienteId } = validatedFields.data;
 
   try {
-    // Obtener cuenta corriente
-    const cuentaCorriente = await prisma.cuentaCorriente.findUnique({
-      where: { id: cuentaCorrienteId },
-    });
+    const cuentaCorriente = CuentasCorrientesDB.findUnique({ id: cuentaCorrienteId });
 
     if (!cuentaCorriente) {
       return {
@@ -299,22 +308,19 @@ export async function cerrarCuentaCorriente(
       };
     }
 
-    // Verificar que los saldos sean 0
-    if (!cuentaCorriente.saldoDeuda.equals(0) || !cuentaCorriente.saldoCredito.equals(0)) {
+    const saldoNeto = cuentaCorriente.saldoDeuda - cuentaCorriente.saldoCredito;
+
+    if (saldoNeto !== 0) {
       return {
-        message: 'No se puede cerrar la cuenta con saldo pendiente.',
+        message: 'No se puede cerrar una cuenta con saldo pendiente.',
         success: false,
       };
     }
 
-    // Cerrar cuenta
-    await prisma.cuentaCorriente.update({
-      where: { id: cuentaCorrienteId },
-      data: { estado: 'CERRADO' },
-    });
+    CuentasCorrientesDB.update({ id: cuentaCorrienteId }, { estado: 'CERRADO' });
 
-    revalidatePath(`/admin/socios/${cuentaCorriente.socioId}/edit`);
-    revalidatePath('/admin/socios');
+    revalidatePath(`/admin/cuenta-corriente/${cuentaCorriente.socioId}`);
+    revalidatePath('/admin/cuenta-corriente');
 
     return {
       message: 'Cuenta corriente cerrada exitosamente.',
@@ -329,67 +335,73 @@ export async function cerrarCuentaCorriente(
   }
 }
 
-/**
- * Obtener saldo neto de una cuenta corriente
- */
+// === REABRIR CUENTA CORRIENTE ===
+
+export async function reabrirCuentaCorriente(
+  prevState: ReabrirCuentaCorrienteState,
+  formData: FormData
+): Promise<ReabrirCuentaCorrienteState> {
+  const validatedFields = ReabrirCuentaCorrienteSchema.safeParse({
+    cuentaCorrienteId: formData.get('cuentaCorrienteId'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Error de validación.',
+      success: false,
+    };
+  }
+
+  const { cuentaCorrienteId } = validatedFields.data;
+
+  try {
+    const cuentaCorriente = CuentasCorrientesDB.findUnique({ id: cuentaCorrienteId });
+
+    if (!cuentaCorriente) {
+      return {
+        message: 'La cuenta corriente no existe.',
+        success: false,
+      };
+    }
+
+    if (cuentaCorriente.estado !== 'CERRADO') {
+      return {
+        message: 'Solo se pueden reabrir cuentas cerradas.',
+        success: false,
+      };
+    }
+
+    CuentasCorrientesDB.update({ id: cuentaCorrienteId }, { estado: 'ACTIVO' });
+
+    revalidatePath(`/admin/cuenta-corriente/${cuentaCorriente.socioId}`);
+    revalidatePath('/admin/cuenta-corriente');
+
+    return {
+      message: 'Cuenta corriente reabierta exitosamente.',
+      success: true,
+    };
+  } catch (error) {
+    console.error('Error al reabrir cuenta corriente:', error);
+    return {
+      message: 'Error al reabrir cuenta corriente.',
+      success: false,
+    };
+  }
+}
+
+// === OBTENER SALDO NETO ===
+
 export async function obtenerSaldoNeto(cuentaCorrienteId: string): Promise<number> {
   try {
-    const cuentaCorriente = await prisma.cuentaCorriente.findUnique({
-      where: { id: cuentaCorrienteId },
-    });
+    const cuentaCorriente = CuentasCorrientesDB.findUnique({ id: cuentaCorrienteId });
 
     if (!cuentaCorriente) return 0;
 
-    // Saldo neto = deuda (positivo) - crédito (negativo)
-    const saldoNeto = cuentaCorriente.saldoDeuda.minus(cuentaCorriente.saldoCredito);
-    return saldoNeto.toNumber();
+    const saldoNeto = cuentaCorriente.saldoDeuda - cuentaCorriente.saldoCredito;
+    return saldoNeto;
   } catch (error) {
     console.error('Error al obtener saldo neto:', error);
     return 0;
   }
 }
-
-/**
- * Abrir cuenta corriente (versión simplificada para uso directo)
- */
-export async function abrirCuentaCorrienteDirecto(socioId: string, descripcion?: string) {
-  try {
-    // Verificar si el socio existe
-    const socio = await prisma.socio.findUnique({
-      where: { id: socioId },
-    });
-
-    if (!socio) {
-      throw new Error('El socio no existe.');
-    }
-
-    // Verificar si ya tiene cuenta corriente
-    const cuentaExistente = await prisma.cuentaCorriente.findUnique({
-      where: { socioId },
-    });
-
-    if (cuentaExistente) {
-      throw new Error('El socio ya tiene una cuenta corriente activa.');
-    }
-
-    // Crear cuenta corriente
-    await prisma.cuentaCorriente.create({
-      data: {
-        socioId,
-        descripcion: descripcion || 'Cuenta corriente abierta',
-        saldoDeuda: new Decimal(0),
-        saldoCredito: new Decimal(0),
-        estado: 'ACTIVO',
-      },
-    });
-
-    revalidatePath(`/admin/cuenta-corriente/${socioId}`);
-    revalidatePath('/admin/cuenta-corriente');
-
-    return { success: true };
-  } catch (error) {
-    console.error('Error al abrir cuenta corriente:', error);
-    throw error;
-  }
-}
-

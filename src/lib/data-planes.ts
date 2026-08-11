@@ -1,10 +1,10 @@
-import prisma from '@/lib/prisma';
+import { PlanesDB } from '@/lib/db';
 import { unstable_noStore as noStore } from 'next/cache';
 
 export async function fetchPlanes() {
   noStore();
   try {
-    const planes = await prisma.plan.findMany({
+    const planes = PlanesDB.findMany({
       orderBy: { precio: 'asc' },
     });
     return planes.map(plan => ({
@@ -20,9 +20,7 @@ export async function fetchPlanes() {
 export async function fetchPlanById(id: string) {
   noStore();
   try {
-    const plan = await prisma.plan.findUnique({
-      where: { id },
-    });
+    const plan = PlanesDB.findUnique({ id });
     
     if (!plan) return null;
 
@@ -39,11 +37,10 @@ export async function fetchPlanById(id: string) {
 export async function fetchActivePlanes() {
   noStore();
   try {
-    const planes = await prisma.plan.findMany({
+    const planes = PlanesDB.findMany({
       where: { activo: true },
       orderBy: { precio: 'asc' },
     });
-    // Convertir Decimal a number para evitar error de serialización en Client Components
     return planes.map(plan => ({
       ...plan,
       precio: Number(plan.precio)

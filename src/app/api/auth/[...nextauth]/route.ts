@@ -1,2 +1,3 @@
-import { handlers } from "@/auth" // Referring to the auth.ts we just created
-export const { GET, POST } = handlers
+// NextAuth route handler removed for demo mode
+// Auth is handled client-side via localStorage
+export {};

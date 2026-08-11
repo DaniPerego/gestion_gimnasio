@@ -1,0 +1,7 @@
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="192" height="192" rx="32" fill="#000000"/>
+  <path d="M60 96C60 86 52 78 42 78C32 78 24 86 24 96C24 106 32 114 42 114C52 114 60 106 60 96Z" fill="white"/>
+  <path d="M168 96C168 86 160 78 150 78C140 78 132 86 132 96C132 106 140 114 150 114C160 114 168 106 168 96Z" fill="white"/>
+  <rect x="52" y="90" width="88" height="12" fill="white"/>
+  <text x="96" y="155" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="white" text-anchor="middle">GYM</text>
+</svg>

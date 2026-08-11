@@ -3,9 +3,19 @@
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { authenticate } from '@/lib/actions';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function LoginForm() {
   const [errorMessage, dispatch] = useActionState(authenticate, undefined);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (errorMessage === undefined) {
+      // Login successful - redirect manually since we can't use server-side redirect
+      window.location.href = '/admin';
+    }
+  }, [errorMessage]);
 
   return (
     <form action={dispatch} className="space-y-3">

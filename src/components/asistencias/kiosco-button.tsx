@@ -10,7 +10,7 @@ export default function KioscoButton() {
   return (
     <button
       onClick={openKiosco}
-      className="flex items-center gap-2 rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 transition-colors"
+      className="flex items-center gap-2 rounded-md bg-[var(--primary-color)] px-4 py-2 text-sm font-medium text-white hover:brightness-110 transition-colors"
       title="Abrir en ventana independiente (Ventana Socio)"
     >
       <ComputerDesktopIcon className="h-5 w-5" />

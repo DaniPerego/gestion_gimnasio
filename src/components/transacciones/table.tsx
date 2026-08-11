@@ -1,131 +1,122 @@
 import { fetchTransacciones } from '@/lib/data-transacciones';
-import VerTicketButton from './ver-ticket-button';
-import { getConfiguracion } from '@/lib/data';
+import Link from 'next/link';
+import DeleteButton from './delete-button';
 
 export default async function TransaccionesTable({
   query,
   currentPage,
-  metodoPago,
 }: {
   query: string;
   currentPage: number;
-  metodoPago?: string;
 }) {
-  const transacciones = await fetchTransacciones(query, currentPage, metodoPago);
-  const config = await getConfiguracion();
+  const transacciones = await fetchTransacciones(query, currentPage);
 
   return (
     <div className="mt-6 flow-root">
       <div className="inline-block min-w-full align-middle">
-        <div className="rounded-lg bg-gray-50 p-2 md:pt-0">
+        <div className="rounded-lg bg-gray-50 dark:bg-gray-800 p-2 md:pt-0">
           <div className="md:hidden">
             {transacciones?.map((transaccion) => (
               <div
                 key={transaccion.id}
-                className="mb-2 w-full rounded-md bg-white p-4"
+                className="mb-3 w-full rounded-md bg-white dark:bg-gray-700 p-4"
               >
-                <div className="flex items-center justify-between border-b pb-4">
-                  <div>
-                    <div className="mb-2 flex items-center">
-                      <p>{transaccion.suscripcion.socio.nombre} {transaccion.suscripcion.socio.apellido}</p>
-                    </div>
-                    <p className="text-sm text-gray-500">{transaccion.suscripcion.plan.nombre}</p>
+                <div className="flex items-start justify-between pb-3 border-b dark:border-gray-600">
+                  <div className="flex-1 min-w-0 pr-3">
+                    <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">
+                      {transaccion.suscripcion?.socio?.nombre} {transaccion.suscripcion?.socio?.apellido}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2" title={transaccion.notas || transaccion.suscripcion?.plan?.nombre}>
+                      {transaccion.notas || transaccion.suscripcion?.plan?.nombre}
+                    </p>
                   </div>
-                  <div className="font-bold text-green-600">
-                    ${Number(transaccion.monto).toFixed(2)}
-                    {transaccion.notas && transaccion.notas.includes('Cuenta Corriente:') && (
-                      <span className="block text-xs text-gray-500 font-normal mt-0.5">
-                        (incluye cta. cte.)
-                      </span>
-                    )}
+                  <div className="flex-shrink-0 text-right">
+                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                      ${Number(transaccion.monto).toFixed(0)}
+                    </p>
                   </div>
                 </div>
-                <div className="flex w-full items-center justify-between pt-4">
-                  <div>
-                    <p className="text-sm">Fecha: {transaccion.fecha.toLocaleDateString()}</p>
-                    <p className="text-sm">Método: {transaccion.metodoPago}</p>
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-3">
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {transaccion.fecha.toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit' })}
+                    </p>
+                    <span className={`px-2 py-1 text-xs rounded-full uppercase font-medium ${transaccion.tipoPago === 'CUOTA_SUSCRIPCION' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' : 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300'}`}>
+                      {transaccion.tipoPago === 'CUOTA_SUSCRIPCION' ? 'Cuota' : 'Otro'}
+                    </span>
+                    <span className="px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 uppercase font-medium">
+                      {transaccion.metodoPago}
+                    </span>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-          <table className="hidden min-w-full text-gray-900 md:table">
+          <table className="hidden min-w-full text-gray-900 dark:text-gray-100 md:table">
             <thead className="rounded-lg text-left text-sm font-normal">
               <tr>
-                <th scope="col" className="px-4 py-5 font-medium sm:pl-6">
+                <th scope="col" className="px-4 py-5 font-medium sm:pl-6 text-gray-900 dark:text-gray-100">
                   Socio
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
-                  Plan
-                </th>
-                <th scope="col" className="px-3 py-5 font-medium">
-                  Fecha
+                  Concepto
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
                   Monto
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
-                  Método de Pago
+                  Fecha
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
-                  Notas
+                  Tipo
+                </th>
+                <th scope="col" className="px-3 py-5 font-medium">
+                  Método
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
                   Acciones
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white">
+            <tbody className="bg-white dark:bg-gray-700">
               {transacciones?.map((transaccion) => (
                 <tr
                   key={transaccion.id}
-                  className="w-full border-b py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
+                  className="w-full border-b border-gray-200 dark:border-gray-600 py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
                 >
                   <td className="whitespace-nowrap py-3 pl-6 pr-3">
                     <div className="flex items-center gap-3">
-                      <p>{transaccion.suscripcion.socio.nombre} {transaccion.suscripcion.socio.apellido}</p>
+                      <p>{transaccion.suscripcion?.socio?.nombre} {transaccion.suscripcion?.socio?.apellido}</p>
                     </div>
-                    <p className="text-xs text-gray-500">{transaccion.suscripcion.socio.dni}</p>
+                  </td>
+                  <td className="px-3 py-3 max-w-xs">
+                    <p className="truncate" title={transaccion.notas || transaccion.suscripcion?.plan?.nombre}>
+                      {transaccion.notas || transaccion.suscripcion?.plan?.nombre}
+                    </p>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3 font-medium">
+                    ${Number(transaccion.monto).toFixed(2)}
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
-                    {transaccion.suscripcion.plan.nombre}
+                    {transaccion.fecha.toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit' })} {transaccion.fecha.toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit' })}
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
-                    {transaccion.fecha.toLocaleDateString()}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-3">
-                    <div>
-                      <p className="font-bold text-green-600 dark:text-green-400">
-                        ${Number(transaccion.monto).toFixed(2)}
-                      </p>
-                      {transaccion.notas && transaccion.notas.includes('Cuenta Corriente:') && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          (incluye cta. cte.)
-                        </p>
-                      )}
-                    </div>
+                    <span className={`px-2 py-1 text-xs rounded-full uppercase font-medium ${transaccion.tipoPago === 'CUOTA_SUSCRIPCION' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
+                      {transaccion.tipoPago === 'CUOTA_SUSCRIPCION' ? 'Cuota' : 'Otro'}
+                    </span>
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
                     {transaccion.metodoPago}
                   </td>
-                  <td className="px-3 py-3 text-sm text-gray-500">
-                    {transaccion.notas || '-'}
-                  </td>
                   <td className="whitespace-nowrap px-3 py-3">
-                    <div className="flex justify-center gap-3">
-                      <VerTicketButton 
-                        ticketData={{
-                          id: transaccion.id,
-                          socioNombre: `${transaccion.suscripcion.socio.nombre} ${transaccion.suscripcion.socio.apellido}`,
-                          planNombre: transaccion.suscripcion.plan.nombre,
-                          monto: Number(transaccion.monto),
-                          fecha: transaccion.fecha,
-                          metodoPago: transaccion.metodoPago,
-                          notas: transaccion.notas,
-                          telefonoSocio: transaccion.suscripcion.socio.telefono,
-                        }}
-                        logoUrl={config?.logoUrl || undefined}
-                      />
+                    <div className="flex gap-2">
+                      <Link
+                        href={`/admin/transacciones/${transaccion.id}`}
+                        className="rounded-md bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-200"
+                      >
+                        Editar
+                      </Link>
+                      <DeleteButton id={transaccion.id} />
                     </div>
                   </td>
                 </tr>

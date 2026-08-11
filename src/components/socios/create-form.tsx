@@ -4,17 +4,39 @@ import Link from 'next/link';
 import { useActionState } from 'react';
 import { createSocio } from '@/lib/actions-socios';
 
-export default function Form() {
-  const initialState = { message: '', errors: {} };
-  const [state, dispatch, isPending] = useActionState(createSocio, initialState);
+import { useRef } from 'react';
 
+type StateType = {
+  message: string;
+  errors: Record<string, string[]>;
+  values: Record<string, string>;
+};
+
+export default function Form() {
+  const initialState: StateType = { message: '', errors: {}, values: {} };
+  const [state, dispatch, isPending] = useActionState<StateType, FormData>(createSocio, initialState);
+  const formRef = useRef<HTMLFormElement>(null);
+  
   return (
-    <form action={dispatch}>
-      <div className="rounded-md bg-gray-50 p-4 md:p-6">
-        {/* Nombre */}
+    <form ref={formRef} action={dispatch}>
+      <div className="rounded-md bg-gray-50 dark:bg-gray-800 p-4 md:p-6">
+        {/* Mostrar errores generales y de campos */}
+        {state.message && (
+          <div className="mb-4 p-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded">
+            {state.message}
+            {state.errors && (
+              <ul className="mt-2 list-disc list-inside text-sm">
+                {Object.entries(state.errors).map(([field, errors]) =>
+                  errors.map((err: string) => <li key={field + err}>{field}: {err}</li>)
+                )}
+              </ul>
+            )}
+          </div>
+        )}
+        {/* Nombre (obligatorio) */}
         <div className="mb-4">
-          <label htmlFor="nombre" className="mb-2 block text-sm font-medium">
-            Nombre
+          <label htmlFor="nombre" className="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-100">
+            Nombre <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <input
@@ -22,8 +44,11 @@ export default function Form() {
               name="nombre"
               type="text"
               placeholder="Ingrese el nombre"
-              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+              className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
               aria-describedby="nombre-error"
+              autoComplete="given-name"
+              defaultValue={state.values?.nombre}
+              required
             />
           </div>
           <div id="nombre-error" aria-live="polite" aria-atomic="true">
@@ -36,10 +61,10 @@ export default function Form() {
           </div>
         </div>
 
-        {/* Apellido */}
+        {/* Apellido (obligatorio) */}
         <div className="mb-4">
-          <label htmlFor="apellido" className="mb-2 block text-sm font-medium">
-            Apellido
+          <label htmlFor="apellido" className="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-100">
+            Apellido <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <input
@@ -47,8 +72,11 @@ export default function Form() {
               name="apellido"
               type="text"
               placeholder="Ingrese el apellido"
-              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+              className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
               aria-describedby="apellido-error"
+              autoComplete="family-name"
+              defaultValue={state.values?.apellido}
+              required
             />
           </div>
           <div id="apellido-error" aria-live="polite" aria-atomic="true">
@@ -61,10 +89,10 @@ export default function Form() {
           </div>
         </div>
 
-        {/* DNI */}
+        {/* DNI (obligatorio) */}
         <div className="mb-4">
-          <label htmlFor="dni" className="mb-2 block text-sm font-medium">
-            DNI
+          <label htmlFor="dni" className="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-100">
+            DNI <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <input
@@ -72,8 +100,11 @@ export default function Form() {
               name="dni"
               type="text"
               placeholder="Ingrese el DNI"
-              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+              className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
               aria-describedby="dni-error"
+              autoComplete="off"
+              defaultValue={state.values?.dni}
+              required
             />
           </div>
           <div id="dni-error" aria-live="polite" aria-atomic="true">
@@ -86,9 +117,47 @@ export default function Form() {
           </div>
         </div>
 
+        {/* Fecha Nacimiento */}
+        <div className="mb-4">
+          <label htmlFor="fechaNacimiento" className="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-100">
+            Fecha de Nacimiento
+          </label>
+          <div className="relative">
+            <input
+              id="fechaNacimiento"
+              name="fechaNacimiento"
+              type="date"
+              autoComplete="bday"
+              defaultValue={state.values?.fechaNacimiento}
+              className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
+            />
+          </div>
+        </div>
+
+        {/* Género */}
+        <div className="mb-4">
+          <label htmlFor="genero" className="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-100">
+            Género
+          </label>
+          <div className="relative">
+            <select
+              id="genero"
+              name="genero"
+              autoComplete="sex"
+              defaultValue={state.values?.genero}
+              className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
+            >
+              <option value="">Seleccione...</option>
+              <option value="M">Masculino</option>
+              <option value="F">Femenino</option>
+              <option value="O">Otro</option>
+            </select>
+          </div>
+        </div>
+
         {/* Email */}
         <div className="mb-4">
-          <label htmlFor="email" className="mb-2 block text-sm font-medium">
+          <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-100">
             Email
           </label>
           <div className="relative">
@@ -97,7 +166,9 @@ export default function Form() {
               name="email"
               type="email"
               placeholder="Ingrese el email"
-              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+              className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
+              autoComplete="email"
+              defaultValue={state.values?.email}
               aria-describedby="email-error"
             />
           </div>
@@ -113,7 +184,7 @@ export default function Form() {
 
         {/* Telefono */}
         <div className="mb-4">
-          <label htmlFor="telefono" className="mb-2 block text-sm font-medium">
+          <label htmlFor="telefono" className="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-100">
             Teléfono
           </label>
           <div className="relative">
@@ -122,48 +193,16 @@ export default function Form() {
               name="telefono"
               type="text"
               placeholder="Ingrese el teléfono"
-              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+              autoComplete="tel"
+              defaultValue={state.values?.telefono}
+              className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
-          </div>
-        </div>
-
-        {/* Fecha de Nacimiento */}
-        <div className="mb-4">
-          <label htmlFor="fechaNacimiento" className="mb-2 block text-sm font-medium">
-            Fecha de Nacimiento
-          </label>
-          <div className="relative">
-            <input
-              id="fechaNacimiento"
-              name="fechaNacimiento"
-              type="date"
-              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2"
-            />
-          </div>
-        </div>
-
-        {/* Género */}
-        <div className="mb-4">
-          <label htmlFor="genero" className="mb-2 block text-sm font-medium">
-            Género
-          </label>
-          <div className="relative">
-            <select
-              id="genero"
-              name="genero"
-              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2"
-            >
-              <option value="">Seleccione...</option>
-              <option value="Masculino">Masculino</option>
-              <option value="Femenino">Femenino</option>
-              <option value="Otro">Otro</option>
-            </select>
           </div>
         </div>
 
         {/* Dirección */}
         <div className="mb-4">
-          <label htmlFor="direccion" className="mb-2 block text-sm font-medium">
+          <label htmlFor="direccion" className="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-100">
             Dirección
           </label>
           <div className="relative">
@@ -172,17 +211,19 @@ export default function Form() {
               name="direccion"
               type="text"
               placeholder="Ingrese la dirección"
-              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+              autoComplete="street-address"
+              defaultValue={state.values?.direccion}
+              className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
           </div>
         </div>
 
-        <hr className="my-6 border-gray-200" />
-        <h3 className="mb-4 text-lg font-medium text-gray-900">Datos de Emergencia</h3>
+        <hr className="my-6 border-gray-300 dark:border-gray-600" />
+        <h3 className="mb-4 text-lg font-medium text-gray-900 dark:text-gray-100">Datos de Emergencia</h3>
 
-        {/* Contacto Emergencia */}
+        {/* Contacto Emergencia (obligatorio) */}
         <div className="mb-4">
-          <label htmlFor="contactoEmergencia" className="mb-2 block text-sm font-medium">
+          <label htmlFor="contactoEmergencia" className="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-100">
             Nombre Contacto Emergencia <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -191,7 +232,9 @@ export default function Form() {
               name="contactoEmergencia"
               type="text"
               placeholder="Nombre de familiar o amigo"
-              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+              autoComplete="off"
+              defaultValue={state.values?.contactoEmergencia}
+              className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
               required
             />
           </div>
@@ -199,7 +242,7 @@ export default function Form() {
 
         {/* Teléfono Emergencia */}
         <div className="mb-4">
-          <label htmlFor="telefonoEmergencia" className="mb-2 block text-sm font-medium">
+          <label htmlFor="telefonoEmergencia" className="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-100">
             Teléfono Emergencia
           </label>
           <div className="relative">
@@ -208,25 +251,28 @@ export default function Form() {
               name="telefonoEmergencia"
               type="text"
               placeholder="Teléfono de emergencia"
-              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+              autoComplete="off"
+              defaultValue={state.values?.telefonoEmergencia}
+              className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
           </div>
         </div>
 
-        <hr className="my-6 border-gray-200" />
-        <h3 className="mb-4 text-lg font-medium text-gray-900">Salud y Objetivos</h3>
+        <hr className="my-6 border-gray-300 dark:border-gray-600" />
+        <h3 className="mb-4 text-lg font-medium text-gray-900 dark:text-gray-100">Salud y Objetivos</h3>
 
-        {/* Condiciones Médicas */}
+        {/* Condiciones Médicas (obligatorio) */}
         <div className="mb-4">
-          <label htmlFor="condicionesMedicas" className="mb-2 block text-sm font-medium">
+          <label htmlFor="condicionesMedicas" className="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-100">
             Condiciones Médicas / Alergias <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <textarea
               id="condicionesMedicas"
               name="condicionesMedicas"
-              placeholder="Describa condiciones médicas relevantes o escriba 'Ninguna'"
-              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+              placeholder="Describa condiciones médicas relevantes..."
+              defaultValue={state.values?.condicionesMedicas}
+              className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
               rows={3}
               required
             />
@@ -235,7 +281,7 @@ export default function Form() {
 
         {/* Objetivo */}
         <div className="mb-4">
-          <label htmlFor="objetivo" className="mb-2 block text-sm font-medium">
+          <label htmlFor="objetivo" className="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-100">
             Objetivo Principal
           </label>
           <div className="relative">
@@ -244,28 +290,15 @@ export default function Form() {
               name="objetivo"
               type="text"
               placeholder="Ej: Bajar de peso, Ganar masa muscular..."
-              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+              defaultValue={state.values?.objetivo}
+              className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
           </div>
         </div>
 
-        <hr className="my-6 border-gray-200" />
+        <hr className="my-6 border-gray-300 dark:border-gray-600" />
 
-        {/* Es Libre */}
-        <div className="mb-4">
-          <div className="flex items-center">
-            <input
-              id="esLibre"
-              name="esLibre"
-              type="checkbox"
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <label htmlFor="esLibre" className="ml-2 block text-sm text-gray-900">
-              Socio Libre (acceso sin vencimiento)
-            </label>
-          </div>
-        </div>
-
+        {/* ...eliminado el checkbox de socio libre... */}
 
         <div aria-live="polite" aria-atomic="true">
             {state.message && (
@@ -278,11 +311,11 @@ export default function Form() {
       <div className="mt-6 flex justify-end gap-4">
         <Link
           href="/admin/socios"
-          className="flex h-10 items-center rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200"
+          className="flex h-10 items-center rounded-lg bg-gray-100 dark:bg-gray-700 px-4 text-sm font-medium text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-200 dark:hover:bg-gray-600"
         >
           Cancelar
         </Link>
-        <button type="submit" aria-disabled={isPending} className="flex h-10 items-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+        <button type="submit" aria-disabled={isPending} className="flex h-10 items-center rounded-lg bg-[var(--primary-color)] px-4 text-sm font-medium text-white transition-colors hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
             {isPending ? 'Creando...' : 'Crear Socio'}
         </button>
       </div>
