@@ -35,7 +35,7 @@ export default function Home() {
       </div>
 
       <div className="absolute bottom-4 text-center text-xs text-gray-500 dark:text-gray-400">
-        <p>&copy; {new Date().getFullYear()} GMS White-Label. Todos los derechos reservados.</p>
+        <p>&copy; {new Date().getFullYear()} DesarrolloWeb-pdl. Todos los derechos reservados.</p>
       </div>
     </main>
   );
