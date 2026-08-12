@@ -1,7 +1,7 @@
 # Próximos Pasos - Sesión del 04/12/2025
 
 ## Bugs Pendientes
-- [ ] **Arreglar Toggle de Tema:** El botón de cambio de tema quedó "trabado" en modo oscuro. El icono del sol aparece, pero al hacer clic no cambia a modo claro. Revisar configuración de `next-themes` y `tailwind.config.ts` (posible conflicto con la clase `dark` o la estrategia de hidratación).
+- [x] **Arreglar Toggle de Tema:** CORREGIDO - Cambiar `@variant dark` a `@custom-variant dark` en globals.css (sintaxis Tailwind v4).
 
 ## Tareas Futuras
 - [ ] Continuar puliendo la interfaz visual.
