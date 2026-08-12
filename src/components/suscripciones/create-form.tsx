@@ -1,21 +1,109 @@
 
 'use client';
 import Link from 'next/link';
-import { useActionState } from 'react';
-// import SearchInput from '@/components/ui/search-input';
-import { createSuscripcion } from '@/lib/actions-suscripciones';
-import { Socio, Plan } from '@/lib/db';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { SuscripcionesDB, PlanesDB, Socio, Plan } from '@/lib/db';
 
 // Definir un tipo Plan serializable donde 'precio' es number en lugar de Decimal
 type PlanSerializable = Omit<Plan, 'precio'> & { precio: number };
 
 
   export default function Form({ socios, planes }: { socios: Socio[], planes: PlanSerializable[] }) {
-    const initialState = { message: '', errors: {} };
-    const [state, dispatch, isPending] = useActionState(createSuscripcion, initialState);
+    const router = useRouter();
+    const [isPending, setIsPending] = useState(false);
+    const [error, setError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      setIsPending(true);
+      setError('');
+      setFieldErrors({});
+
+      const form = e.currentTarget;
+      const formData = new FormData(form);
+
+      const socioId = formData.get('socioId') as string;
+      const planId = formData.get('planId') as string;
+      const fechaInicio = formData.get('fechaInicio') as string;
+
+      // Validate required fields
+      const errors: Record<string, string[]> = {};
+      if (!socioId) errors.socioId = ['Debe seleccionar un socio'];
+      if (!planId) errors.planId = ['Debe seleccionar un plan'];
+      if (!fechaInicio) errors.fechaInicio = ['La fecha de inicio es obligatoria'];
+
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+        setIsPending(false);
+        return;
+      }
+
+      try {
+        const plan = PlanesDB.findUnique({ id: planId });
+
+        if (!plan) {
+          setError('El plan seleccionado no existe.');
+          setIsPending(false);
+          return;
+        }
+
+        const fechaInicioDate = new Date(fechaInicio);
+        fechaInicioDate.setHours(12, 0, 0, 0);
+
+        const fechaFinDate = new Date(fechaInicioDate);
+        fechaFinDate.setMonth(fechaFinDate.getMonth() + plan.duracionMeses);
+        if (fechaFinDate.getDate() !== fechaInicioDate.getDate()) {
+          fechaFinDate.setDate(0);
+        }
+        fechaFinDate.setHours(23, 59, 59, 999);
+
+        const suscripcionActiva = SuscripcionesDB.findFirst({
+          socioId,
+          activa: true,
+        });
+
+        if (suscripcionActiva) {
+          SuscripcionesDB.update({ id: suscripcionActiva.id }, {
+            planId,
+            fechaInicio: fechaInicioDate,
+            fechaFin: fechaFinDate,
+            activa: true,
+          });
+        } else {
+          const suscripcionInactiva = SuscripcionesDB.findFirst({
+            socioId,
+            planId,
+            activa: false,
+          });
+          if (suscripcionInactiva) {
+            SuscripcionesDB.update({ id: suscripcionInactiva.id }, {
+              fechaInicio: fechaInicioDate,
+              fechaFin: fechaFinDate,
+              activa: true,
+            });
+          } else {
+            SuscripcionesDB.create({
+              socioId,
+              planId,
+              fechaInicio: fechaInicioDate,
+              fechaFin: fechaFinDate,
+              activa: true,
+            });
+          }
+        }
+
+        router.push('/admin/suscripciones');
+      } catch {
+        setError('Error al crear la suscripción. Intente nuevamente.');
+      } finally {
+        setIsPending(false);
+      }
+    };
 
     return (
-      <form action={dispatch}>
+      <form onSubmit={handleSubmit}>
         <div className="rounded-md bg-gray-50 dark:bg-gray-800 p-4 md:p-6">
           {/* Socio */}
           <div className="mb-4">
@@ -41,8 +129,8 @@ type PlanSerializable = Omit<Plan, 'precio'> & { precio: number };
               </select>
             </div>
             <div id="socio-error" aria-live="polite" aria-atomic="true">
-              {state.errors?.socioId &&
-                state.errors.socioId.map((error: string) => (
+              {fieldErrors.socioId &&
+                fieldErrors.socioId.map((error: string) => (
                   <p className="mt-2 text-sm text-red-500" key={error}>
                     {error}
                   </p>
@@ -74,8 +162,8 @@ type PlanSerializable = Omit<Plan, 'precio'> & { precio: number };
             </select>
           </div>
           <div id="plan-error" aria-live="polite" aria-atomic="true">
-            {state.errors?.planId &&
-              state.errors.planId.map((error: string) => (
+            {fieldErrors.planId &&
+              fieldErrors.planId.map((error: string) => (
                 <p className="mt-2 text-sm text-red-500" key={error}>
                   {error}
                 </p>
@@ -99,8 +187,8 @@ type PlanSerializable = Omit<Plan, 'precio'> & { precio: number };
             />
           </div>
           <div id="fecha-error" aria-live="polite" aria-atomic="true">
-            {state.errors?.fechaInicio &&
-              state.errors.fechaInicio.map((error: string) => (
+            {fieldErrors.fechaInicio &&
+              fieldErrors.fechaInicio.map((error: string) => (
                 <p className="mt-2 text-sm text-red-500" key={error}>
                   {error}
                 </p>
@@ -109,9 +197,9 @@ type PlanSerializable = Omit<Plan, 'precio'> & { precio: number };
         </div>
 
         <div aria-live="polite" aria-atomic="true">
-            {state.message && (
-                <p className="mt-2 text-sm text-red-500" key={state.message}>
-                    {state.message}
+            {error && (
+                <p className="mt-2 text-sm text-red-500" key={error}>
+                    {error}
                 </p>
             )}
         </div>
