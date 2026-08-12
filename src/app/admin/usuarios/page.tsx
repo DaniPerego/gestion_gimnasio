@@ -4,9 +4,11 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth-simple';
-import { fetchUsuarios, fetchUsuariosPages } from '@/lib/data-usuarios';
+import { UsuariosDB } from '@/lib/db';
 import UsersTable from '@/components/usuarios/table';
 import SearchInput from '@/components/ui/search-input';
+
+const ITEMS_PER_PAGE = 10;
 
 export default function UsuariosPage() {
   const router = useRouter();
@@ -24,21 +26,32 @@ export default function UsuariosPage() {
       return;
     }
     setIsAdmin(user.rol === 'ADMIN');
-    loadData('');
+    loadData('', 1);
   }, [router]);
 
-  const loadData = async (q: string, page: number = 1) => {
+  const loadData = (q: string, page: number = 1) => {
     setLoading(true);
-    try {
-      const data = await fetchUsuarios(q, page);
-      const pages = await fetchUsuariosPages(q);
-      setUsuarios(data);
-      setTotalPages(pages);
-      setCurrentPage(page);
-      setQuery(q);
-    } catch (e) {
-      console.error(e);
-    }
+    const offset = (page - 1) * ITEMS_PER_PAGE;
+
+    const allUsers = UsuariosDB.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Filter by query
+    const filtered = q
+      ? allUsers.filter(u =>
+          u.nombre?.toLowerCase().includes(q.toLowerCase()) ||
+          u.email?.toLowerCase().includes(q.toLowerCase())
+        )
+      : allUsers;
+
+    const pages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
+    const paginated = filtered.slice(offset, offset + ITEMS_PER_PAGE);
+
+    setUsuarios(paginated);
+    setTotalPages(pages);
+    setCurrentPage(page);
+    setQuery(q);
     setLoading(false);
   };
 
