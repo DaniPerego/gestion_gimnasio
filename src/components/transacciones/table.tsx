@@ -1,22 +1,77 @@
-import { fetchTransacciones } from '@/lib/data-transacciones';
+'use client';
+
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { TransaccionesDB } from '@/lib/db';
 import DeleteButton from './delete-button';
 
-export default async function TransaccionesTable({
+export default function TransaccionesTable({
   query,
   currentPage,
 }: {
   query: string;
   currentPage: number;
 }) {
-  const transacciones = await fetchTransacciones(query, currentPage);
+  const [transacciones, setTransacciones] = useState<any[]>([]);
+
+  useEffect(() => {
+    const ITEMS_PER_PAGE = 10;
+    const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+
+    const all = TransaccionesDB.findMany({
+      where: {},
+      include: {
+        suscripcion: {
+          include: {
+            socio: true,
+            plan: true,
+          },
+        },
+      },
+      orderBy: { fecha: 'desc' },
+    });
+
+    const filtered = query
+      ? all.filter((t: any) => {
+          const socio = t.suscripcion?.socio;
+          if (!socio) return false;
+          const q = query.toLowerCase();
+          return (
+            socio.nombre?.toLowerCase().includes(q) ||
+            socio.apellido?.toLowerCase().includes(q) ||
+            socio.dni?.includes(q)
+          );
+        })
+      : all;
+
+    const paginated = filtered.slice(offset, offset + ITEMS_PER_PAGE);
+
+    setTransacciones(
+      paginated.map((t: any) => ({
+        ...t,
+        fecha: new Date(t.fecha),
+        monto: Number(t.monto),
+        suscripcion: t.suscripcion
+          ? {
+              ...t.suscripcion,
+              fechaFin: new Date(t.suscripcion.fechaFin),
+              fechaInicio: new Date(t.suscripcion.fechaInicio),
+              plan: {
+                ...t.suscripcion.plan,
+                precio: Number(t.suscripcion.plan?.precio || 0),
+              },
+            }
+          : undefined,
+      }))
+    );
+  }, [query, currentPage]);
 
   return (
     <div className="mt-6 flow-root">
       <div className="inline-block min-w-full align-middle">
         <div className="rounded-lg bg-gray-50 dark:bg-gray-800 p-2 md:pt-0">
           <div className="md:hidden">
-            {transacciones?.map((transaccion) => (
+            {transacciones.map((transaccion) => (
               <div
                 key={transaccion.id}
                 className="mb-3 w-full rounded-md bg-white dark:bg-gray-700 p-4"
@@ -79,7 +134,7 @@ export default async function TransaccionesTable({
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-700">
-              {transacciones?.map((transaccion) => (
+              {transacciones.map((transaccion) => (
                 <tr
                   key={transaccion.id}
                   className="w-full border-b border-gray-200 dark:border-gray-600 py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"

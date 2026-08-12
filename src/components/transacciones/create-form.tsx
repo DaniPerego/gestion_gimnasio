@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useActionState, useEffect, useState } from 'react';
-import { createTransaccion } from '@/lib/actions-transacciones';
+import { useEffect, useState } from 'react';
+import { TransaccionesDB, SuscripcionesDB, CuentasCorrientesDB, MovimientosCCDB } from '@/lib/db';
 import SuscripcionSearchSelect from './suscripcion-search-select';
 import { useRouter } from 'next/navigation';
 import TicketReceipt from './ticket-receipt';
@@ -25,60 +25,48 @@ type SuscripcionWithRelations = {
   plan: { nombre: string; precio: number };
 };
 
-// Interfaz para el estado de la acción
-interface ActionState {
-  errors?: {
-    suscripcionId?: string[];
-    tipoPago?: string[];
-    monto?: string[];
-    metodoPago?: string[];
-    fecha?: string[];
-    notas?: string[];
-  };
-  message?: string;
-  success?: boolean;
-  transaccion?: any; 
+function buildRenewalDates(baseDate: Date, duracionMeses: number) {
+  const fechaInicio = new Date(baseDate);
+  fechaInicio.setHours(12, 0, 0, 0);
+  const fechaFin = new Date(fechaInicio);
+  fechaFin.setMonth(fechaFin.getMonth() + duracionMeses);
+  if (fechaFin.getDate() !== fechaInicio.getDate()) {
+    fechaFin.setDate(0);
+  }
+  fechaFin.setHours(23, 59, 59, 999);
+  return { fechaInicio, fechaFin };
 }
 
 export default function Form({ suscripciones, logoUrl }: { suscripciones: SuscripcionWithRelations[], logoUrl?: string | null }) {
-  const initialState: ActionState = { message: '', errors: {} };
-  const [state, dispatch, isPending] = useActionState(createTransaccion, initialState);
   const router = useRouter();
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState('');
   const [showTicket, setShowTicket] = useState(false);
   const [selectedSuscripcion, setSelectedSuscripcion] = useState<SuscripcionWithRelations | null>(null);
   const [incluirCuentaCorriente, setIncluirCuentaCorriente] = useState(false);
   const [tipoPago, setTipoPago] = useState<'CUOTA_SUSCRIPCION' | 'OTRO'>('OTRO');
   const [montoCuota, setMontoCuota] = useState<number>(0);
   const [montoCuentaCorriente, setMontoCuentaCorriente] = useState<number>(0);
-  
-  const totalACobrar = montoCuota + montoCuentaCorriente;
+  const [createdTransaccion, setCreatedTransaccion] = useState<any>(null);
 
-  // Detectar éxito y mostrar ticket
-  useEffect(() => {
-    if (state.success && state.transaccion) {
-      setShowTicket(true);
-    }
-  }, [state.success, state.transaccion]);
+  const totalACobrar = montoCuota + montoCuentaCorriente;
 
   const handleCloseTicket = () => {
     setShowTicket(false);
-    // Redirigir a la lista de transacciones después de cerrar el ticket
     router.push('/admin/transacciones');
-    router.refresh();
   };
 
-  // Preparar datos para el ticket
-  const ticketData = state.transaccion ? {
-    id: state.transaccion.id,
-    socioNombre: `${state.transaccion.suscripcion.socio.nombre} ${state.transaccion.suscripcion.socio.apellido}`,
-    planNombre: state.transaccion.suscripcion.plan.nombre,
-    tipoPago: state.transaccion.tipoPago,
-    monto: Number(state.transaccion.monto),
-    fecha: state.transaccion.fecha,
-      fechaVencimiento: state.transaccion.suscripcion.fechaFin,
-    metodoPago: state.transaccion.metodoPago,
-    notas: state.transaccion.notas,
-    telefonoSocio: state.transaccion.suscripcion.socio.telefono
+  const ticketData = createdTransaccion ? {
+    id: createdTransaccion.id,
+    socioNombre: `${createdTransaccion.suscripcion.socio.nombre} ${createdTransaccion.suscripcion.socio.apellido}`,
+    planNombre: createdTransaccion.suscripcion.plan.nombre,
+    tipoPago: createdTransaccion.tipoPago,
+    monto: Number(createdTransaccion.monto),
+    fecha: createdTransaccion.fecha,
+    fechaVencimiento: createdTransaccion.suscripcion.fechaFin,
+    metodoPago: createdTransaccion.metodoPago,
+    notas: createdTransaccion.notas,
+    telefonoSocio: createdTransaccion.suscripcion.socio.telefono
   } : null;
 
   const cuentaCorriente = selectedSuscripcion?.socio?.cuentaCorriente;
@@ -87,37 +75,166 @@ export default function Form({ suscripciones, logoUrl }: { suscripciones: Suscri
   const saldoCredito = tieneCuentaCorriente ? cuentaCorriente.saldoCredito : 0;
   const saldoNeto = saldoDeuda - saldoCredito;
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsPending(true);
+    setError('');
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    const suscripcionId = selectedSuscripcion?.id || '';
+    const metodoPago = formData.get('metodoPago') as string;
+    const notas = formData.get('notas') as string;
+    const fecha = formData.get('fecha') as string;
+
+    if (!suscripcionId) {
+      setError('Debe seleccionar una suscripción.');
+      setIsPending(false);
+      return;
+    }
+    if (!metodoPago) {
+      setError('Seleccione un método de pago.');
+      setIsPending(false);
+      return;
+    }
+    if (!notas?.trim()) {
+      setError('La descripción es requerida.');
+      setIsPending(false);
+      return;
+    }
+    if (totalACobrar <= 0) {
+      setError('Debe ingresar un monto mayor a $0.');
+      setIsPending(false);
+      return;
+    }
+
+    try {
+      const suscripcion = SuscripcionesDB.findUnique(
+        { id: suscripcionId },
+        { plan: true }
+      );
+      if (!suscripcion) {
+        setError('La suscripción seleccionada no existe.');
+        setIsPending(false);
+        return;
+      }
+
+      const montoTotal = totalACobrar;
+      let notasCompletas = notas || '';
+      if (incluirCuentaCorriente && montoCuentaCorriente > 0 && montoCuota > 0) {
+        notasCompletas = `Cuota: $${montoCuota.toFixed(2)} + Cuenta Corriente: $${montoCuentaCorriente.toFixed(2)} = Total: $${montoTotal.toFixed(2)}${notas ? ' | ' + notas : ''}`;
+      } else if (incluirCuentaCorriente && montoCuentaCorriente > 0) {
+        notasCompletas = `Cuenta Corriente: $${montoCuentaCorriente.toFixed(2)}${notas ? ' | ' + notas : ''}`;
+      }
+
+      const newTransaccion = TransaccionesDB.create({
+        suscripcionId,
+        tipoPago,
+        monto: montoTotal,
+        metodoPago,
+        fecha: fecha ? new Date(fecha) : new Date(),
+        notas: notasCompletas,
+      });
+
+      if (tipoPago === 'CUOTA_SUSCRIPCION' && montoCuota > 0) {
+        const fechaPagoBase = fecha ? new Date(fecha) : new Date();
+        const { fechaInicio, fechaFin } = buildRenewalDates(fechaPagoBase, suscripcion.plan?.duracionMeses || 1);
+        SuscripcionesDB.update({ id: suscripcionId }, {
+          fechaInicio,
+          fechaFin,
+          activa: true,
+        });
+      }
+
+      if (incluirCuentaCorriente && cuentaCorriente?.id && montoCuentaCorriente > 0) {
+        const cc = CuentasCorrientesDB.findUnique({ id: cuentaCorriente.id });
+        if (cc && cc.estado === 'ACTIVO') {
+          let nuevoSaldoDeuda = cc.saldoDeuda;
+          let nuevoSaldoCredito = cc.saldoCredito;
+          let montoPendiente = montoCuentaCorriente;
+
+          if (nuevoSaldoDeuda > 0) {
+            if (montoPendiente >= nuevoSaldoDeuda) {
+              montoPendiente -= nuevoSaldoDeuda;
+              nuevoSaldoDeuda = 0;
+            } else {
+              nuevoSaldoDeuda -= montoPendiente;
+              montoPendiente = 0;
+            }
+          }
+          if (montoPendiente > 0) {
+            if (nuevoSaldoCredito > 0) {
+              if (montoPendiente >= nuevoSaldoCredito) {
+                montoPendiente -= nuevoSaldoCredito;
+                nuevoSaldoCredito = 0;
+              } else {
+                nuevoSaldoCredito -= montoPendiente;
+                montoPendiente = 0;
+              }
+            } else {
+              nuevoSaldoCredito = montoPendiente;
+            }
+          }
+
+          const nuevoEstado = nuevoSaldoDeuda === 0 && nuevoSaldoCredito === 0 ? 'SALDADO' : 'ACTIVO';
+
+          MovimientosCCDB.create({
+            cuentaCorrienteId: cuentaCorriente.id,
+            tipo: 'PAGO',
+            monto: montoCuentaCorriente,
+            descripcion: montoCuota > 0
+              ? `Pago de cuota + cuenta corriente (Transacción #${newTransaccion.id})`
+              : `Pago de cuenta corriente (Transacción #${newTransaccion.id})`,
+            transaccionId: newTransaccion.id,
+          });
+
+          CuentasCorrientesDB.update({ id: cuentaCorriente.id }, {
+            saldoDeuda: nuevoSaldoDeuda,
+            saldoCredito: nuevoSaldoCredito,
+            estado: nuevoEstado,
+          });
+        }
+      }
+
+      // Enrich the created transaccion for ticket
+      const enriched = {
+        ...newTransaccion,
+        suscripcion: {
+          ...suscripcion,
+          socio: suscripcion.socio || selectedSuscripcion?.socio,
+          plan: suscripcion.plan || selectedSuscripcion?.plan,
+        }
+      };
+      setCreatedTransaccion(enriched);
+      setShowTicket(true);
+    } catch {
+      setError('Error al registrar la transacción. Intente nuevamente.');
+    } finally {
+      setIsPending(false);
+    }
+  };
+
   return (
     <>
       {showTicket && ticketData && (
         <TicketReceipt data={ticketData} onClose={handleCloseTicket} logoUrl={logoUrl} />
       )}
 
-      <form action={dispatch} className="space-y-6">
-        {/* Grid Principal: Suscripción y Cuenta Corriente lado a lado */}
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Tarjeta: Seleccionar Suscripción */}
           <div className="rounded-xl bg-white dark:bg-gray-800 p-6 shadow-sm border border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              📋 Seleccionar Suscripción
+              Seleccionar Suscripción
             </h3>
-            <SuscripcionSearchSelect 
+            <SuscripcionSearchSelect
               suscripciones={suscripciones}
               onSuscripcionChange={(susc) => {
                 setSelectedSuscripcion(susc);
                 setTipoPago('OTRO');
               }}
             />
-            <div id="suscripcion-error" aria-live="polite" aria-atomic="true">
-              {state.errors?.suscripcionId &&
-                state.errors.suscripcionId.map((error: string) => (
-                  <p className="mt-2 text-sm text-red-500" key={error}>
-                    {error}
-                  </p>
-                ))}
-            </div>
 
-            {/* Info del socio seleccionado */}
             {selectedSuscripcion && (
               <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -133,28 +250,20 @@ export default function Form({ suscripciones, logoUrl }: { suscripciones: Suscri
             )}
           </div>
 
-          {/* Tarjeta: Cuenta Corriente (solo si existe) */}
           {selectedSuscripcion && tieneCuentaCorriente && (
             <div className="rounded-xl bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 p-6 shadow-sm border-2 border-orange-300 dark:border-orange-700">
               <h3 className="text-lg font-semibold text-orange-900 dark:text-orange-200 mb-4">
-                💳 Cuenta Corriente
+                Cuenta Corriente
               </h3>
-              
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-orange-700 dark:text-orange-300">Deuda:</span>
-                  <span className="text-xl font-bold text-red-600 dark:text-red-400">
-                    ${saldoDeuda.toFixed(2)}
-                  </span>
+                  <span className="text-xl font-bold text-red-600 dark:text-red-400">${saldoDeuda.toFixed(2)}</span>
                 </div>
-                
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-orange-700 dark:text-orange-300">Crédito:</span>
-                  <span className="text-xl font-bold text-green-600 dark:text-green-400">
-                    ${saldoCredito.toFixed(2)}
-                  </span>
+                  <span className="text-xl font-bold text-green-600 dark:text-green-400">${saldoCredito.toFixed(2)}</span>
                 </div>
-                
                 <div className="pt-3 border-t-2 border-orange-300 dark:border-orange-700">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-orange-900 dark:text-orange-200">Saldo Neto:</span>
@@ -164,7 +273,6 @@ export default function Form({ suscripciones, logoUrl }: { suscripciones: Suscri
                   </div>
                 </div>
 
-                {/* Checkbox para incluir pago */}
                 {saldoNeto > 0 && (
                   <div className="mt-4 pt-4 border-t border-orange-300 dark:border-orange-700">
                     <div className="flex items-center gap-2 mb-3">
@@ -186,7 +294,7 @@ export default function Form({ suscripciones, logoUrl }: { suscripciones: Suscri
                         Incluir pago de cuenta corriente
                       </label>
                     </div>
-                    
+
                     {incluirCuentaCorriente && (
                       <div>
                         <label htmlFor="montoCuentaCorriente" className="block text-xs font-medium text-orange-800 dark:text-orange-300 mb-1">
@@ -212,18 +320,11 @@ export default function Form({ suscripciones, logoUrl }: { suscripciones: Suscri
               </div>
             </div>
           )}
-
-          {/* Hidden inputs para cuenta corriente - siempre enviar con valores por defecto */}
-          <input type="hidden" name="incluirCuentaCorriente" value={incluirCuentaCorriente ? "true" : "false"} />
-          <input type="hidden" name="tipoPago" value={tipoPago} />
-          <input type="hidden" name="montoCuentaCorriente" value={incluirCuentaCorriente ? montoCuentaCorriente : 0} />
-          <input type="hidden" name="cuentaCorrienteId" value={incluirCuentaCorriente && cuentaCorriente?.id ? cuentaCorriente.id : ''} />
         </div>
 
-        {/* Tarjeta: Detalles del Pago */}
         <div className="rounded-xl bg-white dark:bg-gray-800 p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-            💰 Detalles del Pago
+            Detalles del Pago
           </h3>
 
           {selectedSuscripcion && (
@@ -241,7 +342,7 @@ export default function Form({ suscripciones, logoUrl }: { suscripciones: Suscri
                     }}
                     className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
                   >
-                    🧾 Marcar como cuota
+                    Marcar como cuota
                   </button>
                   {tipoPago === 'CUOTA_SUSCRIPCION' && (
                     <button
@@ -262,9 +363,7 @@ export default function Form({ suscripciones, logoUrl }: { suscripciones: Suscri
             </div>
           )}
 
-          {/* Grid para Monto y Fecha */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            {/* Monto */}
             <div>
               <label htmlFor="monto" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Monto {incluirCuentaCorriente && <span className="text-xs text-gray-500">(puede ser $0)</span>}
@@ -281,12 +380,8 @@ export default function Form({ suscripciones, logoUrl }: { suscripciones: Suscri
                 placeholder="Ingrese el monto"
                 className="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm"
               />
-              {state.errors?.monto && (
-                <p className="mt-1 text-sm text-red-500">{state.errors.monto[0]}</p>
-              )}
             </div>
 
-            {/* Fecha */}
             <div>
               <label htmlFor="fecha" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Fecha de Pago
@@ -302,7 +397,6 @@ export default function Form({ suscripciones, logoUrl }: { suscripciones: Suscri
             </div>
           </div>
 
-          {/* Descripción - Full width */}
           <div className="mb-4">
             <label htmlFor="notas" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Descripción *
@@ -315,12 +409,8 @@ export default function Form({ suscripciones, logoUrl }: { suscripciones: Suscri
               required
               className="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 px-3 text-sm"
             />
-            {state.errors?.notas && (
-              <p className="mt-1 text-sm text-red-500">{state.errors.notas[0]}</p>
-            )}
           </div>
 
-          {/* Método de Pago */}
           <div>
             <label htmlFor="metodoPago" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Método de Pago *
@@ -332,23 +422,19 @@ export default function Form({ suscripciones, logoUrl }: { suscripciones: Suscri
               defaultValue=""
             >
               <option value="" disabled>Seleccione un método</option>
-              <option value="EFECTIVO">💵 Efectivo</option>
-              <option value="TRANSFERENCIA">🏦 Transferencia</option>
-              <option value="TARJETA_DEBITO">💳 Tarjeta Débito</option>
-              <option value="TARJETA_CREDITO">💳 Tarjeta Crédito</option>
-              <option value="OTROS">📱 Otros</option>
+              <option value="EFECTIVO">Efectivo</option>
+              <option value="TRANSFERENCIA">Transferencia</option>
+              <option value="TARJETA_DEBITO">Tarjeta Débito</option>
+              <option value="TARJETA_CREDITO">Tarjeta Crédito</option>
+              <option value="OTROS">Otros</option>
             </select>
-            {state.errors?.metodoPago && (
-              <p className="mt-1 text-sm text-red-500">{state.errors.metodoPago[0]}</p>
-            )}
           </div>
         </div>
 
-        {/* Desglose del Total (solo si hay montos) */}
         {(incluirCuentaCorriente || montoCuota > 0) && (
           <div className="rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 p-6 shadow-sm border-2 border-blue-300 dark:border-blue-700">
             <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-4">
-              📊 Resumen del Cobro
+              Resumen del Cobro
             </h3>
             <div className="space-y-2 text-sm">
               {montoCuota > 0 && (
@@ -373,7 +459,6 @@ export default function Form({ suscripciones, logoUrl }: { suscripciones: Suscri
           </div>
         )}
 
-        {/* Botones de Acción */}
         <div className="flex justify-end gap-4 pt-4">
           <Link
             href="/admin/transacciones"
@@ -389,15 +474,14 @@ export default function Form({ suscripciones, logoUrl }: { suscripciones: Suscri
             {isPending
               ? 'Registrando...'
               : tipoPago === 'CUOTA_SUSCRIPCION'
-                ? '✅ Registrar Pago y Renovar'
-                : '✅ Registrar Pago'}
+                ? 'Registrar Pago y Renovar'
+                : 'Registrar Pago'}
           </button>
         </div>
 
-        {/* Mensaje de error general */}
-        {state.message && !state.success && (
+        {error && (
           <div className="rounded-lg bg-red-50 dark:bg-red-900/30 p-4 border border-red-200 dark:border-red-800">
-            <p className="text-sm text-red-800 dark:text-red-300">{state.message}</p>
+            <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
           </div>
         )}
       </form>

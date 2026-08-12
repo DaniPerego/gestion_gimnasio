@@ -1,11 +1,15 @@
 'use client';
 
-import { deleteTransaccion } from '@/lib/actions-transacciones';
+import { useRouter } from 'next/navigation';
+import { TransaccionesDB } from '@/lib/db';
 
 export default function DeleteButton({ id }: { id: string }) {
+  const router = useRouter();
+
   async function handleDelete() {
     if (confirm('¿Estás seguro de que deseas eliminar esta transacción?')) {
-      await deleteTransaccion(id);
+      TransaccionesDB.delete({ id });
+      router.refresh();
     }
   }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { registrarModalidad } from '@/lib/actions-modalidad';
+import { AsistenciasDB, SociosDB, SuscripcionesDB, PlanesDB } from '@/lib/db';
 
 type Asistencia = {
   id: string;
@@ -25,11 +25,51 @@ export default function ProfesorPanel({ discipline }: { discipline: string }) {
   const [asistencias, setAsistencias] = useState<Asistencia[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchAsistencias = async () => {
+  const fetchAsistencias = () => {
     try {
-      const response = await fetch(`/api/asistencias/hoy?discipline=${discipline}`);
-      const data = await response.json();
-      setAsistencias(data);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const todayStr = today.toISOString().split('T')[0];
+
+      // Get today's attendances
+      const allAsistencias = AsistenciasDB.findMany({
+        where: {
+          fecha: {
+            gte: today,
+            lt: tomorrow,
+          },
+        },
+        include: { socio: true },
+      });
+
+      // Enrich with subscriptions
+      const enriched = allAsistencias.map((a: any) => {
+        const socio = SociosDB.findUnique({ id: a.socioId });
+        if (!socio) return null;
+
+        const subs = SuscripcionesDB.findMany({
+          where: {},
+          include: { plan: true },
+        }).filter((s: any) => s.socioId === socio.id && s.activa);
+
+        return {
+          ...a,
+          socio: {
+            ...socio,
+            suscripciones: subs.map((s: any) => ({
+              plan: {
+                ...s.plan,
+                precio: Number(s.plan?.precio || 0),
+              },
+            })),
+          },
+        };
+      }).filter(Boolean);
+
+      setAsistencias(enriched as Asistencia[]);
     } catch (error) {
       console.error('Error al cargar asistencias:', error);
     } finally {
@@ -39,8 +79,7 @@ export default function ProfesorPanel({ discipline }: { discipline: string }) {
 
   useEffect(() => {
     fetchAsistencias();
-    
-    // Auto-actualizar cada 30 segundos
+
     const interval = setInterval(() => {
       fetchAsistencias();
     }, 30000);
@@ -49,15 +88,14 @@ export default function ProfesorPanel({ discipline }: { discipline: string }) {
   }, [discipline]);
 
   const handleModalidad = async (asistenciaId: string, modalidad: 'MUSCULACION' | 'CROSSFIT') => {
-    const formData = new FormData();
-    formData.append('asistenciaId', asistenciaId);
-    formData.append('modalidad', modalidad);
-
-    const result = await registrarModalidad({}, formData);
-    
-    if (result.status === 'success') {
-      // Actualizar la lista inmediatamente
+    try {
+      AsistenciasDB.update(
+        { id: asistenciaId },
+        { modalidad }
+      );
       fetchAsistencias();
+    } catch (error) {
+      console.error('Error al registrar modalidad:', error);
     }
   };
 
@@ -93,12 +131,12 @@ export default function ProfesorPanel({ discipline }: { discipline: string }) {
                   const planNombre = asistencia.socio.suscripciones[0]?.plan.nombre || 'Sin Plan';
                   const allowsCrossfit = asistencia.socio.suscripciones[0]?.plan.allowsCrossfit || false;
                   const allowsMusculacion = asistencia.socio.suscripciones[0]?.plan.allowsMusculacion || false;
-                  
+
                   const fecha = new Date(asistencia.fecha);
-                  const horaIngreso = fecha.toLocaleTimeString('es-AR', { 
-                    hour: '2-digit', 
-                    minute: '2-digit', 
-                    timeZone: 'America/Argentina/Buenos_Aires' 
+                  const horaIngreso = fecha.toLocaleTimeString('es-AR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZone: 'America/Argentina/Buenos_Aires'
                   });
 
                   return (

@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useActionState, useEffect } from 'react';
-import { updateTransaccion } from '@/lib/actions-transacciones';
+import { useEffect, useState } from 'react';
+import { TransaccionesDB } from '@/lib/db';
 import SuscripcionSearchSelect from './suscripcion-search-select';
 import { useRouter } from 'next/navigation';
 
@@ -40,188 +40,166 @@ export default function EditForm({
   transaccion: Transaccion;
   suscripciones: SuscripcionWithRelations[];
 }) {
-  const initialState = { message: '', errors: {} };
-  const [state, dispatch, isPending] = useActionState(updateTransaccion, initialState);
   const router = useRouter();
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
-  const fechaFormato = transaccion.fecha.toISOString().split('T')[0];
+  const fechaFormato = transaccion.fecha instanceof Date
+    ? transaccion.fecha.toISOString().split('T')[0]
+    : new Date(transaccion.fecha).toISOString().split('T')[0];
 
-  // Redirigir después de mostrar mensaje de éxito
-  useEffect(() => {
-    if (state.success) {
-      const timer = setTimeout(() => {
-        router.push('/admin/transacciones');
-        router.refresh();
-      }, 1500);
-      return () => clearTimeout(timer);
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsPending(true);
+    setError('');
+    setFieldErrors({});
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    const suscripcionId = formData.get('suscripcionId') as string;
+    const tipoPago = formData.get('tipoPago') as string;
+    const monto = formData.get('monto') as string;
+    const metodoPago = formData.get('metodoPago') as string;
+    const fecha = formData.get('fecha') as string;
+    const notas = formData.get('notas') as string;
+
+    const errors: Record<string, string[]> = {};
+    if (!suscripcionId) errors.suscripcionId = ['Debe seleccionar una suscripción'];
+    if (!monto || isNaN(Number(monto)) || Number(monto) < 0) errors.monto = ['El monto no puede ser negativo'];
+    if (!metodoPago) errors.metodoPago = ['Seleccione un método de pago'];
+    if (!notas?.trim()) errors.notas = ['La descripción es requerida'];
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setIsPending(false);
+      return;
     }
-  }, [state.success, router]);
+
+    try {
+      TransaccionesDB.update({ id: transaccion.id }, {
+        suscripcionId,
+        tipoPago: tipoPago || 'OTRO',
+        monto: Number(monto),
+        metodoPago,
+        fecha: fecha ? new Date(fecha) : undefined,
+        notas: notas || null,
+      });
+      router.push('/admin/transacciones');
+    } catch {
+      setError('Error al actualizar la transacción. Intente nuevamente.');
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   return (
-    <form action={dispatch}>
+    <form onSubmit={handleSubmit}>
       <input type="hidden" name="id" value={transaccion.id} />
       <div className="rounded-md bg-gray-50 p-4 md:p-6">
-        {/* Suscripción */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
+            {error}
+          </div>
+        )}
+
         <div className="mb-4">
           <label htmlFor="suscripcionId" className="mb-2 block text-sm font-medium text-gray-900">
             Seleccionar Suscripción
           </label>
           <SuscripcionSearchSelect suscripciones={suscripciones} defaultValue={transaccion.suscripcionId} />
-          <div id="suscripcion-error" aria-live="polite" aria-atomic="true">
-            {state.errors?.suscripcionId &&
-              state.errors.suscripcionId.map((error: string) => (
-                <p className="mt-2 text-sm text-red-500" key={error}>
-                  {error}
-                </p>
-              ))}
-          </div>
+          {fieldErrors.suscripcionId && fieldErrors.suscripcionId.map((err: string) => (
+            <p className="mt-2 text-sm text-red-500" key={err}>{err}</p>
+          ))}
         </div>
 
-        {/* Monto */}
         <div className="mb-4">
           <label htmlFor="tipoPago" className="mb-2 block text-sm font-medium text-gray-900">
             Tipo de Pago
           </label>
-          <div className="relative">
-            <select
-              id="tipoPago"
-              name="tipoPago"
-              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
-              defaultValue={transaccion.tipoPago || 'OTRO'}
-            >
-              <option value="OTRO">Otro pago (no renueva suscripción)</option>
-              <option value="CUOTA_SUSCRIPCION">Cuota de suscripción (renueva automáticamente)</option>
-            </select>
-          </div>
-          <div id="tipoPago-error" aria-live="polite" aria-atomic="true">
-            {state.errors?.tipoPago &&
-              state.errors.tipoPago.map((error: string) => (
-                <p className="mt-2 text-sm text-red-500" key={error}>
-                  {error}
-                </p>
-              ))}
-          </div>
+          <select
+            id="tipoPago"
+            name="tipoPago"
+            className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+            defaultValue={transaccion.tipoPago || 'OTRO'}
+          >
+            <option value="OTRO">Otro pago (no renueva suscripción)</option>
+            <option value="CUOTA_SUSCRIPCION">Cuota de suscripción (renueva automáticamente)</option>
+          </select>
+          {fieldErrors.tipoPago && fieldErrors.tipoPago.map((err: string) => (
+            <p className="mt-2 text-sm text-red-500" key={err}>{err}</p>
+          ))}
         </div>
 
-        {/* Monto */}
         <div className="mb-4">
           <label htmlFor="monto" className="mb-2 block text-sm font-medium text-gray-900">
             Monto
           </label>
-          <div className="relative mt-2 rounded-md">
-            <div className="relative">
-              <input
-                id="monto"
-                name="monto"
-                type="number"
-                step="0.01"
-                defaultValue={transaccion.monto}
-                placeholder="Ingrese el monto"
-                className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
-                aria-describedby="monto-error"
-              />
-            </div>
-          </div>
-          <div id="monto-error" aria-live="polite" aria-atomic="true">
-            {state.errors?.monto &&
-              state.errors.monto.map((error: string) => (
-                <p className="mt-2 text-sm text-red-500" key={error}>
-                  {error}
-                </p>
-              ))}
-          </div>
+          <input
+            id="monto"
+            name="monto"
+            type="number"
+            step="0.01"
+            defaultValue={transaccion.monto}
+            placeholder="Ingrese el monto"
+            className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+          />
+          {fieldErrors.monto && fieldErrors.monto.map((err: string) => (
+            <p className="mt-2 text-sm text-red-500" key={err}>{err}</p>
+          ))}
         </div>
 
-        {/* Fecha */}
         <div className="mb-4">
           <label htmlFor="fecha" className="mb-2 block text-sm font-medium text-gray-900">
             Fecha de Pago
           </label>
-          <div className="relative">
-            <input
-              id="fecha"
-              name="fecha"
-              type="date"
-              defaultValue={fechaFormato}
-              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
-              aria-describedby="fecha-error"
-            />
-          </div>
-          <div id="fecha-error" aria-live="polite" aria-atomic="true">
-            {state.errors?.fecha &&
-              state.errors.fecha.map((error: string) => (
-                <p className="mt-2 text-sm text-red-500" key={error}>
-                  {error}
-                </p>
-              ))}
-          </div>
+          <input
+            id="fecha"
+            name="fecha"
+            type="date"
+            defaultValue={fechaFormato}
+            className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+          />
         </div>
 
-        {/* Notas */}
         <div className="mb-4">
           <label htmlFor="notas" className="mb-2 block text-sm font-medium text-gray-900">
             Notas
           </label>
-          <div className="relative">
-            <input
-              id="notas"
-              name="notas"
-              type="text"
-              defaultValue={transaccion.notas || ''}
-              placeholder="Ej: Pago mensualidad, Compra bebida"
-              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
-              aria-describedby="notas-error"
-            />
-          </div>
-          <div id="notas-error" aria-live="polite" aria-atomic="true">
-            {state.errors?.notas &&
-              state.errors.notas.map((error: string) => (
-                <p className="mt-2 text-sm text-red-500" key={error}>
-                  {error}
-                </p>
-              ))}
-          </div>
+          <input
+            id="notas"
+            name="notas"
+            type="text"
+            defaultValue={transaccion.notas || ''}
+            placeholder="Ej: Pago mensualidad, Compra bebida"
+            className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+          />
+          {fieldErrors.notas && fieldErrors.notas.map((err: string) => (
+            <p className="mt-2 text-sm text-red-500" key={err}>{err}</p>
+          ))}
         </div>
 
-        {/* Metodo Pago */}
         <div className="mb-4">
           <label htmlFor="metodoPago" className="mb-2 block text-sm font-medium text-gray-900">
             Método de Pago
           </label>
-          <div className="relative">
-            <select
-              id="metodoPago"
-              name="metodoPago"
-              className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
-              defaultValue={transaccion.metodoPago}
-              aria-describedby="metodo-error"
-            >
-              <option value="" disabled>
-                Seleccione un método
-              </option>
-              <option value="EFECTIVO">💵 Efectivo</option>
-              <option value="TRANSFERENCIA">🏦 Transferencia</option>
-              <option value="TARJETA_DEBITO">💳 Tarjeta Débito</option>
-              <option value="TARJETA_CREDITO">💳 Tarjeta Crédito</option>
-              <option value="OTROS">📱 Otros</option>
-            </select>
-          </div>
-          <div id="metodo-error" aria-live="polite" aria-atomic="true">
-            {state.errors?.metodoPago &&
-              state.errors.metodoPago.map((error: string) => (
-                <p className="mt-2 text-sm text-red-500" key={error}>
-                  {error}
-                </p>
-              ))}
-          </div>
-        </div>
-
-        <div aria-live="polite" aria-atomic="true">
-          {state.message && (
-            <p className={`mt-2 text-sm ${state.success ? 'text-green-600' : 'text-red-500'}`} key={state.message}>
-              {state.message}
-            </p>
-          )}
+          <select
+            id="metodoPago"
+            name="metodoPago"
+            className="peer block w-full rounded-md border border-gray-200 bg-white text-gray-900 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500"
+            defaultValue={transaccion.metodoPago}
+          >
+            <option value="" disabled>Seleccione un método</option>
+            <option value="EFECTIVO">Efectivo</option>
+            <option value="TRANSFERENCIA">Transferencia</option>
+            <option value="TARJETA_DEBITO">Tarjeta Débito</option>
+            <option value="TARJETA_CREDITO">Tarjeta Crédito</option>
+            <option value="OTROS">Otros</option>
+          </select>
+          {fieldErrors.metodoPago && fieldErrors.metodoPago.map((err: string) => (
+            <p className="mt-2 text-sm text-red-500" key={err}>{err}</p>
+          ))}
         </div>
       </div>
       <div className="mt-6 flex justify-end gap-4">
@@ -233,8 +211,8 @@ export default function EditForm({
         </Link>
         <button
           type="submit"
-          aria-disabled={isPending}
-          className="flex h-10 items-center rounded-lg bg-[var(--primary-color)] px-4 text-sm font-medium text-white transition-colors hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          disabled={isPending}
+          className="flex h-10 items-center rounded-lg bg-[var(--primary-color)] px-4 text-sm font-medium text-white transition-colors hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
         >
           {isPending ? 'Guardando...' : 'Guardar Cambios'}
         </button>

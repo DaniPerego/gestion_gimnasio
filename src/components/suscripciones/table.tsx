@@ -1,8 +1,11 @@
-import { fetchSuscripciones } from '@/lib/data-suscripciones';
-import { cancelSuscripcion } from '@/lib/actions-suscripciones';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { SuscripcionesDB } from '@/lib/db';
 import { formatFechaBuenosAires } from '@/lib/date-utils';
 
-export default async function SuscripcionesTable({
+export default function SuscripcionesTable({
   query,
   currentPage,
   filtro,
@@ -11,15 +14,61 @@ export default async function SuscripcionesTable({
   currentPage: number;
   filtro?: string;
 }) {
-  const suscripciones = await fetchSuscripciones(query, currentPage, filtro);
+  const router = useRouter();
+  const [suscripciones, setSuscripciones] = useState<any[]>([]);
   const now = new Date();
+
+  useEffect(() => {
+    const ITEMS_PER_PAGE = 10;
+    const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+
+    const all = SuscripcionesDB.findMany({
+      where: {},
+      include: { socio: true, plan: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Apply filters
+    let filtered = all;
+    if (filtro === 'vencidas' || filtro === 'vencidas-mas') {
+      filtered = all.filter((s: any) => new Date(s.fechaFin) < now);
+    } else if (filtro === 'por-vencer') {
+      const next7Days = new Date(now);
+      next7Days.setDate(next7Days.getDate() + 7);
+      filtered = all.filter((s: any) => {
+        const ff = new Date(s.fechaFin);
+        return ff >= now && ff <= next7Days;
+      });
+    }
+
+    const paginated = filtered.slice(offset, offset + ITEMS_PER_PAGE);
+
+    setSuscripciones(
+      paginated.map((s: any) => ({
+        ...s,
+        fechaFin: new Date(s.fechaFin),
+        fechaInicio: new Date(s.fechaInicio),
+        plan: {
+          ...s.plan,
+          precio: Number(s.plan?.precio || 0),
+        },
+      }))
+    );
+  }, [query, currentPage, filtro]);
+
+  const handleCancel = (id: string) => {
+    if (confirm('¿Estás seguro de que deseas cancelar esta suscripción?')) {
+      SuscripcionesDB.update({ id }, { activa: false });
+      router.refresh();
+    }
+  };
 
   return (
     <div className="mt-6 flow-root">
       <div className="inline-block min-w-full align-middle">
         <div className="rounded-lg bg-gray-50 dark:bg-gray-800 p-2 md:pt-0">
           <div className="md:hidden">
-            {suscripciones?.map((suscripcion) => {
+            {suscripciones.map((suscripcion) => {
               const isExpired = suscripcion.fechaFin < now;
               const isActive = suscripcion.activa && !isExpired;
               const statusLabel = isActive ? 'Activa' : isExpired ? 'Vencida' : 'Inactiva';
@@ -50,11 +99,13 @@ export default async function SuscripcionesTable({
                     </div>
                     <div className="flex justify-end gap-2">
                       {isActive && (
-                        <form action={cancelSuscripcion.bind(null, suscripcion.id)}>
-                          <button className="rounded-md border border-gray-300 dark:border-gray-600 p-2 hover:bg-gray-100 dark:hover:bg-gray-600 text-red-600 dark:text-red-400" title="Cancelar Suscripción">
-                            🚫
-                          </button>
-                        </form>
+                        <button
+                          onClick={() => handleCancel(suscripcion.id)}
+                          className="rounded-md border border-gray-300 dark:border-gray-600 p-2 hover:bg-gray-100 dark:hover:bg-gray-600 text-red-600 dark:text-red-400"
+                          title="Cancelar Suscripción"
+                        >
+                          🚫
+                        </button>
                       )}
                     </div>
                   </div>
@@ -65,76 +116,56 @@ export default async function SuscripcionesTable({
           <table className="hidden min-w-full text-gray-900 dark:text-gray-100 md:table">
             <thead className="rounded-lg text-left text-sm font-normal">
               <tr>
-                <th scope="col" className="px-4 py-5 font-medium sm:pl-6 text-gray-900 dark:text-gray-100">
-                  Socio
-                </th>
-                <th scope="col" className="px-3 py-5 font-medium">
-                  Plan
-                </th>
-                <th scope="col" className="px-3 py-5 font-medium">
-                  Fecha Inicio
-                </th>
-                <th scope="col" className="px-3 py-5 font-medium">
-                  Fecha Fin
-                </th>
-                <th scope="col" className="px-3 py-5 font-medium">
-                  Estado
-                </th>
-                <th scope="col" className="relative py-3 pl-6 pr-3">
-                  <span className="sr-only">Acciones</span>
-                </th>
+                <th scope="col" className="px-4 py-5 font-medium sm:pl-6 text-gray-900 dark:text-gray-100">Socio</th>
+                <th scope="col" className="px-3 py-5 font-medium">Plan</th>
+                <th scope="col" className="px-3 py-5 font-medium">Fecha Inicio</th>
+                <th scope="col" className="px-3 py-5 font-medium">Fecha Fin</th>
+                <th scope="col" className="px-3 py-5 font-medium">Estado</th>
+                <th scope="col" className="relative py-3 pl-6 pr-3"><span className="sr-only">Acciones</span></th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-700">
-              {suscripciones?.map((suscripcion) => (
-                (() => {
-                  const isExpired = suscripcion.fechaFin < now;
-                  const isActive = suscripcion.activa && !isExpired;
-                  const statusLabel = isActive ? 'Activa' : isExpired ? 'Vencida' : 'Inactiva';
-                  const statusClasses = isActive
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800';
+              {suscripciones.map((suscripcion) => {
+                const isExpired = suscripcion.fechaFin < now;
+                const isActive = suscripcion.activa && !isExpired;
+                const statusLabel = isActive ? 'Activa' : isExpired ? 'Vencida' : 'Inactiva';
+                const statusClasses = isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
 
-                  return (
-                    <tr
-                      key={suscripcion.id}
-                      className="w-full border-b border-gray-200 dark:border-gray-600 py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
-                    >
-                      <td className="whitespace-nowrap py-3 pl-6 pr-3">
-                        <div className="flex items-center gap-3">
-                          <p>{suscripcion.socio.nombre} {suscripcion.socio.apellido}</p>
-                        </div>
-                        <p className="text-xs text-gray-500">{suscripcion.socio.dni}</p>
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-3">
-                        {suscripcion.plan.nombre}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-3">
-                        {formatFechaBuenosAires(suscripcion.fechaInicio)}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-3">
-                        {formatFechaBuenosAires(suscripcion.fechaFin)}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-3">
-                        <div className={`inline-flex px-2 py-1 text-xs rounded-full ${statusClasses}`}>
-                            {statusLabel}
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap py-3 pl-6 pr-3">
-                        <div className="flex justify-end gap-3">
-                            {isActive && (
-                                <form action={cancelSuscripcion.bind(null, suscripcion.id)}>
-                                    <button className="rounded-md border p-2 hover:bg-gray-100 text-red-600" title="Cancelar Suscripción">
-                                        🚫
-                                    </button>
-                                </form>
-                            )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })()
-              ))}
+                return (
+                  <tr
+                    key={suscripcion.id}
+                    className="w-full border-b border-gray-200 dark:border-gray-600 py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
+                  >
+                    <td className="whitespace-nowrap py-3 pl-6 pr-3">
+                      <div className="flex items-center gap-3">
+                        <p>{suscripcion.socio.nombre} {suscripcion.socio.apellido}</p>
+                      </div>
+                      <p className="text-xs text-gray-500">{suscripcion.socio.dni}</p>
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-3">{suscripcion.plan.nombre}</td>
+                    <td className="whitespace-nowrap px-3 py-3">{formatFechaBuenosAires(suscripcion.fechaInicio)}</td>
+                    <td className="whitespace-nowrap px-3 py-3">{formatFechaBuenosAires(suscripcion.fechaFin)}</td>
+                    <td className="whitespace-nowrap px-3 py-3">
+                      <div className={`inline-flex px-2 py-1 text-xs rounded-full ${statusClasses}`}>
+                        {statusLabel}
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap py-3 pl-6 pr-3">
+                      <div className="flex justify-end gap-3">
+                        {isActive && (
+                          <button
+                            onClick={() => handleCancel(suscripcion.id)}
+                            className="rounded-md border p-2 hover:bg-gray-100 text-red-600"
+                            title="Cancelar Suscripción"
+                          >
+                            🚫
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

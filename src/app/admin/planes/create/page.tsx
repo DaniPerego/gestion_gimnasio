@@ -1,3 +1,5 @@
+'use client';
+
 import Form from '@/components/planes/create-form';
 
 export default function Page() {

@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { deleteUsuario } from '@/lib/actions-usuarios';
+import { useRouter } from 'next/navigation';
+import { UsuariosDB } from '@/lib/db';
 
 type User = {
   id: string;
@@ -15,10 +16,12 @@ export default function UsersTable({
 }: {
   users: User[];
 }) {
-  const handleDelete = async (id: string) => {
+  const router = useRouter();
+
+  const handleDelete = (id: string) => {
     if (confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
-      await deleteUsuario(id);
-      window.location.reload();
+      UsuariosDB.delete({ id });
+      router.refresh();
     }
   };
 
@@ -44,13 +47,13 @@ export default function UsersTable({
                   </span>
                 </div>
                 <div className="flex justify-end gap-2 pt-3">
-                  <Link 
-                    href={`/admin/usuarios/${user.id}/edit`} 
+                  <Link
+                    href={`/admin/usuarios/${user.id}/edit`}
                     className="rounded-md border border-gray-300 dark:border-gray-600 p-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
                   >
                     Editar
                   </Link>
-                  <button 
+                  <button
                     onClick={() => handleDelete(user.id)}
                     className="rounded-md border border-gray-300 dark:border-gray-600 p-2 hover:bg-gray-100 dark:hover:bg-gray-600 text-red-600 dark:text-red-400 transition-colors"
                   >
@@ -63,18 +66,10 @@ export default function UsersTable({
           <table className="hidden min-w-full text-gray-900 dark:text-gray-100 md:table">
             <thead className="rounded-lg text-left text-sm font-normal">
               <tr>
-                <th scope="col" className="px-4 py-5 font-medium sm:pl-6 text-gray-900 dark:text-gray-100">
-                  Nombre
-                </th>
-                <th scope="col" className="px-3 py-5 font-medium">
-                  Email
-                </th>
-                <th scope="col" className="px-3 py-5 font-medium">
-                  Rol
-                </th>
-                <th scope="col" className="relative py-3 pl-6 pr-3">
-                  <span className="sr-only">Acciones</span>
-                </th>
+                <th scope="col" className="px-4 py-5 font-medium sm:pl-6 text-gray-900 dark:text-gray-100">Nombre</th>
+                <th scope="col" className="px-3 py-5 font-medium">Email</th>
+                <th scope="col" className="px-3 py-5 font-medium">Rol</th>
+                <th scope="col" className="relative py-3 pl-6 pr-3"><span className="sr-only">Acciones</span></th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-700">
@@ -88,23 +83,19 @@ export default function UsersTable({
                       <p>{user.nombre}</p>
                     </div>
                   </td>
-                  <td className="whitespace-nowrap px-3 py-3">
-                    {user.email}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-3">
-                    {user.rol}
-                  </td>
+                  <td className="whitespace-nowrap px-3 py-3">{user.email}</td>
+                  <td className="whitespace-nowrap px-3 py-3">{user.rol}</td>
                   <td className="whitespace-nowrap py-3 pl-6 pr-3">
                     <div className="flex justify-end gap-3">
-                        <Link href={`/admin/usuarios/${user.id}/edit`} className="rounded-md border p-2 hover:bg-gray-100">
-                            Editar
-                        </Link>
-                        <button 
-                          onClick={() => handleDelete(user.id)}
-                          className="rounded-md border p-2 hover:bg-gray-100 text-red-600"
-                        >
-                            Eliminar
-                        </button>
+                      <Link href={`/admin/usuarios/${user.id}/edit`} className="rounded-md border p-2 hover:bg-gray-100">
+                        Editar
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(user.id)}
+                        className="rounded-md border p-2 hover:bg-gray-100 text-red-600"
+                      >
+                        Eliminar
+                      </button>
                     </div>
                   </td>
                 </tr>

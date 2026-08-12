@@ -1,13 +1,36 @@
-import EditForm from '@/components/socios/edit-form';
-import { fetchSocioById } from '@/lib/data-socios-single';
-import { notFound } from 'next/navigation';
+'use client';
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const socio = await fetchSocioById(id);
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import EditForm from '@/components/socios/edit-form';
+import { SociosDB } from '@/lib/db';
+
+export default function Page() {
+  const params = useParams();
+  const router = useRouter();
+  const [socio, setSocio] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const id = params.id as string;
+    const found = SociosDB.findUnique({ id });
+    if (found) {
+      setSocio(found);
+    }
+    setLoading(false);
+  }, [params.id]);
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   if (!socio) {
-    notFound();
+    router.push('/admin/socios');
+    return null;
   }
 
   return (

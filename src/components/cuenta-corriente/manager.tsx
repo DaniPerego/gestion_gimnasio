@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { registrarMovimiento, cerrarCuentaCorriente, reabrirCuentaCorriente } from '@/lib/actions-cuenta-corriente';
-import { useFormState } from 'react-dom';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { CuentasCorrientesDB, MovimientosCCDB } from '@/lib/db';
 
 type Socio = {
   id: string;
@@ -42,30 +41,9 @@ type Socio = {
 export default function CuentaCorrienteManager({ socio }: { socio: Socio }) {
   const router = useRouter();
   const [tipo, setTipo] = useState<string>('DEUDA');
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState<'success' | 'error'>('success');
   const formRef = useRef<HTMLFormElement>(null);
-  
-  const initialState = { message: '', errors: {}, success: false };
-  const [stateMovimiento, formActionMovimiento] = useFormState(registrarMovimiento, initialState);
-  const [stateCerrar, formActionCerrar] = useFormState(cerrarCuentaCorriente, initialState);
-  const [stateReabrir, formActionReabrir] = useFormState(reabrirCuentaCorriente, initialState);
-
-  // Refrescar cuando hay éxito
-  useEffect(() => {
-    if (stateMovimiento?.success) {
-      formRef.current?.reset();
-      setTimeout(() => {
-        router.refresh();
-      }, 1500);
-    }
-  }, [stateMovimiento?.success, router]);
-
-  useEffect(() => {
-    if (stateCerrar?.success || stateReabrir?.success) {
-      setTimeout(() => {
-        router.refresh();
-      }, 1000);
-    }
-  }, [stateCerrar?.success, stateReabrir?.success, router]);
 
   const cuentaCorriente = socio.cuentaCorriente;
   if (!cuentaCorriente) {
@@ -79,15 +57,126 @@ export default function CuentaCorrienteManager({ socio }: { socio: Socio }) {
   }
 
   const saldoNeto = cuentaCorriente.saldoDeuda - cuentaCorriente.saldoCredito;
-  const puedeRegistrarMovimientos = cuentaCorriente.estado !== 'CERRADO'; // Permite movimientos en ACTIVO y SALDADO
-  const puedeCerrar = cuentaCorriente.estado !== 'CERRADO' && saldoNeto === 0; // Solo si el saldo es 0
+  const puedeRegistrarMovimientos = cuentaCorriente.estado !== 'CERRADO';
+  const puedeCerrar = cuentaCorriente.estado !== 'CERRADO' && saldoNeto === 0;
   const puedeReabrir = cuentaCorriente.estado === 'CERRADO';
   const cuotasPagadas = socio.cuotasPagadas ?? [];
   const resumenCuotas = socio.resumenCuotas;
 
+  const handleRegistrarMovimiento = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    const movTipo = formData.get('tipo') as string;
+    const monto = Number(formData.get('monto'));
+    const descripcion = formData.get('descripcion') as string;
+
+    if (!monto || monto <= 0) {
+      setMessage('El monto debe ser mayor a 0.');
+      setMessageType('error');
+      return;
+    }
+    if (!descripcion?.trim()) {
+      setMessage('La descripción es requerida.');
+      setMessageType('error');
+      return;
+    }
+
+    const cc = CuentasCorrientesDB.findUnique({ id: cuentaCorriente.id });
+    if (!cc || cc.estado === 'CERRADO') {
+      setMessage('No se pueden registrar movimientos en una cuenta cerrada.');
+      setMessageType('error');
+      return;
+    }
+
+    let nuevoSaldoDeuda = cc.saldoDeuda;
+    let nuevoSaldoCredito = cc.saldoCredito;
+
+    switch (movTipo) {
+      case 'DEUDA':
+        nuevoSaldoDeuda += monto;
+        break;
+      case 'CREDITO':
+        nuevoSaldoCredito += monto;
+        break;
+      case 'PAGO': {
+        let montoPendiente = monto;
+        if (nuevoSaldoDeuda > 0) {
+          if (montoPendiente >= nuevoSaldoDeuda) {
+            montoPendiente -= nuevoSaldoDeuda;
+            nuevoSaldoDeuda = 0;
+          } else {
+            nuevoSaldoDeuda -= montoPendiente;
+            montoPendiente = 0;
+          }
+        }
+        if (montoPendiente > 0 && nuevoSaldoCredito > 0) {
+          if (montoPendiente >= nuevoSaldoCredito) {
+            montoPendiente -= nuevoSaldoCredito;
+            nuevoSaldoCredito = 0;
+          } else {
+            nuevoSaldoCredito -= montoPendiente;
+            montoPendiente = 0;
+          }
+        }
+        break;
+      }
+    }
+
+    MovimientosCCDB.create({
+      cuentaCorrienteId: cuentaCorriente.id,
+      tipo: movTipo,
+      monto,
+      descripcion: descripcion.trim(),
+      transaccionId: null,
+    });
+
+    CuentasCorrientesDB.update({ id: cuentaCorriente.id }, {
+      saldoDeuda: nuevoSaldoDeuda,
+      saldoCredito: nuevoSaldoCredito,
+      estado: cc.estado,
+    });
+
+    setMessage('Movimiento registrado exitosamente.');
+    setMessageType('success');
+    formRef.current?.reset();
+    setTimeout(() => router.refresh(), 1000);
+  };
+
+  const handleCerrar = () => {
+    if (!confirm('¿Está seguro de cerrar esta cuenta corriente?')) return;
+
+    const cc = CuentasCorrientesDB.findUnique({ id: cuentaCorriente.id });
+    if (!cc) return;
+
+    const neto = cc.saldoDeuda - cc.saldoCredito;
+    if (neto !== 0) {
+      setMessage('No se puede cerrar una cuenta con saldo pendiente.');
+      setMessageType('error');
+      return;
+    }
+
+    CuentasCorrientesDB.update({ id: cuentaCorriente.id }, { estado: 'CERRADO' });
+    setMessage('Cuenta corriente cerrada exitosamente.');
+    setMessageType('success');
+    setTimeout(() => router.refresh(), 1000);
+  };
+
+  const handleReabrir = () => {
+    if (!confirm('¿Está seguro de reabrir esta cuenta corriente?')) return;
+
+    const cc = CuentasCorrientesDB.findUnique({ id: cuentaCorriente.id });
+    if (!cc || cc.estado !== 'CERRADO') return;
+
+    CuentasCorrientesDB.update({ id: cuentaCorriente.id }, { estado: 'ACTIVO' });
+    setMessage('Cuenta corriente reabierta exitosamente.');
+    setMessageType('success');
+    setTimeout(() => router.refresh(), 1000);
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header con info del socio */}
       <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow-sm">
         <div className="flex items-start justify-between">
           <div>
@@ -108,7 +197,6 @@ export default function CuentaCorrienteManager({ socio }: { socio: Socio }) {
         </div>
       </div>
 
-      {/* Resumen de saldos */}
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-lg bg-red-50 dark:bg-red-900/20 p-4">
           <p className="text-sm font-medium text-red-600 dark:text-red-400">Deuda</p>
@@ -123,26 +211,18 @@ export default function CuentaCorrienteManager({ socio }: { socio: Socio }) {
           </p>
         </div>
         <div className={`rounded-lg p-4 ${
-          saldoNeto > 0
-            ? 'bg-orange-50 dark:bg-orange-900/20'
-            : saldoNeto < 0
-            ? 'bg-blue-50 dark:bg-blue-900/20'
+          saldoNeto > 0 ? 'bg-orange-50 dark:bg-orange-900/20'
+            : saldoNeto < 0 ? 'bg-blue-50 dark:bg-blue-900/20'
             : 'bg-gray-50 dark:bg-gray-700'
         }`}>
           <p className={`text-sm font-medium ${
-            saldoNeto > 0
-              ? 'text-orange-600 dark:text-orange-400'
-              : saldoNeto < 0
-              ? 'text-blue-600 dark:text-blue-400'
+            saldoNeto > 0 ? 'text-orange-600 dark:text-orange-400'
+              : saldoNeto < 0 ? 'text-blue-600 dark:text-blue-400'
               : 'text-gray-600 dark:text-gray-400'
-          }`}>
-            Saldo Neto
-          </p>
+          }`}>Saldo Neto</p>
           <p className={`text-2xl font-bold ${
-            saldoNeto > 0
-              ? 'text-orange-700 dark:text-orange-300'
-              : saldoNeto < 0
-              ? 'text-blue-700 dark:text-blue-300'
+            saldoNeto > 0 ? 'text-orange-700 dark:text-orange-300'
+              : saldoNeto < 0 ? 'text-blue-700 dark:text-blue-300'
               : 'text-gray-700 dark:text-gray-300'
           }`}>
             ${Math.abs(saldoNeto).toFixed(2)}
@@ -150,30 +230,20 @@ export default function CuentaCorrienteManager({ socio }: { socio: Socio }) {
         </div>
       </div>
 
-      {/* Resumen e historial de cuotas */}
       <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Cuotas del Socio
-        </h2>
-
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Cuotas del Socio</h2>
         <div className="grid gap-4 md:grid-cols-3 mb-6">
           <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 p-4">
             <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Cuotas Pagadas</p>
-            <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-200">
-              {resumenCuotas.cantidadPagadas}
-            </p>
+            <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-200">{resumenCuotas.cantidadPagadas}</p>
           </div>
           <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4">
             <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Total Pagado en Cuotas</p>
-            <p className="text-2xl font-bold text-blue-800 dark:text-blue-200">
-              ${resumenCuotas.totalPagado.toFixed(2)}
-            </p>
+            <p className="text-2xl font-bold text-blue-800 dark:text-blue-200">${resumenCuotas.totalPagado.toFixed(2)}</p>
           </div>
           <div className="rounded-lg bg-orange-50 dark:bg-orange-900/20 p-4">
             <p className="text-sm font-medium text-orange-700 dark:text-orange-300">Adeuda Actualmente</p>
-            <p className="text-2xl font-bold text-orange-800 dark:text-orange-200">
-              ${resumenCuotas.deudaActual.toFixed(2)}
-            </p>
+            <p className="text-2xl font-bold text-orange-800 dark:text-orange-200">${resumenCuotas.deudaActual.toFixed(2)}</p>
           </div>
         </div>
 
@@ -196,11 +266,7 @@ export default function CuentaCorrienteManager({ socio }: { socio: Socio }) {
                 {cuotasPagadas.map((cuota) => (
                   <tr key={cuota.id} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="px-4 py-3">
-                      {new Date(cuota.fecha).toLocaleDateString('es-AR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                      })}
+                      {new Date(cuota.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                     </td>
                     <td className="px-4 py-3">{cuota.planNombre}</td>
                     <td className="px-4 py-3">{cuota.metodoPago}</td>
@@ -215,35 +281,23 @@ export default function CuentaCorrienteManager({ socio }: { socio: Socio }) {
         )}
       </div>
 
-      {/* Formulario para registrar movimiento */}
       {puedeRegistrarMovimientos && (
         <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Registrar Movimiento
-          </h2>
-          
-          {stateMovimiento?.message && (
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Registrar Movimiento</h2>
+
+          {message && (
             <div className={`mb-4 rounded-lg p-4 ${
-              stateMovimiento.success
+              messageType === 'success'
                 ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200'
                 : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200'
             }`}>
-              <p className="font-medium">{stateMovimiento.message}</p>
-              {stateMovimiento.errors && Object.keys(stateMovimiento.errors).length > 0 && (
-                <ul className="mt-2 list-disc list-inside text-sm">
-                  {Object.entries(stateMovimiento.errors).map(([key, errors]) => 
-                    errors?.map((error: string, idx: number) => (
-                      <li key={`${key}-${idx}`}>{error}</li>
-                    ))
-                  )}
-                </ul>
-              )}
+              <p className="font-medium">{message}</p>
             </div>
           )}
 
-          <form ref={formRef} action={formActionMovimiento} className="space-y-4">
+          <form ref={formRef} onSubmit={handleRegistrarMovimiento} className="space-y-4">
             <input type="hidden" name="cuentaCorrienteId" value={cuentaCorriente.id} />
-            
+
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -262,7 +316,6 @@ export default function CuentaCorrienteManager({ socio }: { socio: Socio }) {
                   <option value="AJUSTE">Ajuste</option>
                 </select>
               </div>
-
               <div>
                 <label htmlFor="monto" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Monto
@@ -304,27 +357,17 @@ export default function CuentaCorrienteManager({ socio }: { socio: Socio }) {
         </div>
       )}
 
-      {/* Botón para cerrar cuenta */}
       {puedeCerrar && (
         <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow-sm">
-          <form action={formActionCerrar}>
-            <input type="hidden" name="cuentaCorrienteId" value={cuentaCorriente.id} />
-            <button
-              type="submit"
-              className="w-full rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-500"
-              onClick={(e) => {
-                if (!confirm('¿Está seguro de cerrar esta cuenta corriente?')) {
-                  e.preventDefault();
-                }
-              }}
-            >
-              Cerrar Cuenta Corriente
-            </button>
-          </form>
+          <button
+            onClick={handleCerrar}
+            className="w-full rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-500"
+          >
+            Cerrar Cuenta Corriente
+          </button>
         </div>
       )}
 
-      {/* Botón para reabrir cuenta */}
       {puedeReabrir && (
         <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow-sm">
           <div className="mb-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4">
@@ -332,28 +375,17 @@ export default function CuentaCorrienteManager({ socio }: { socio: Socio }) {
               Esta cuenta está cerrada. Puede reabrirla para registrar nuevos movimientos.
             </p>
           </div>
-          <form action={formActionReabrir}>
-            <input type="hidden" name="cuentaCorrienteId" value={cuentaCorriente.id} />
-            <button
-              type="submit"
-              className="w-full rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-500"
-              onClick={(e) => {
-                if (!confirm('¿Está seguro de reabrir esta cuenta corriente?')) {
-                  e.preventDefault();
-                }
-              }}
-            >
-              Reabrir Cuenta Corriente
-            </button>
-          </form>
+          <button
+            onClick={handleReabrir}
+            className="w-full rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-500"
+          >
+            Reabrir Cuenta Corriente
+          </button>
         </div>
       )}
 
-      {/* Historial de movimientos */}
       <div className="rounded-lg bg-white dark:bg-gray-800 p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Historial de Movimientos
-        </h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Historial de Movimientos</h2>
 
         {cuentaCorriente.movimientos.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
@@ -369,23 +401,17 @@ export default function CuentaCorrienteManager({ socio }: { socio: Socio }) {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                      mov.tipo === 'DEUDA'
-                        ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
-                        : mov.tipo === 'CREDITO'
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
-                        : mov.tipo === 'PAGO'
-                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300'
+                      mov.tipo === 'DEUDA' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
+                        : mov.tipo === 'CREDITO' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+                        : mov.tipo === 'PAGO' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300'
                         : 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
                     }`}>
                       {mov.tipo}
                     </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
                       {new Date(mov.createdAt).toLocaleString('es-AR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
+                        day: '2-digit', month: '2-digit', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit',
                       })}
                     </span>
                   </div>
@@ -393,12 +419,9 @@ export default function CuentaCorrienteManager({ socio }: { socio: Socio }) {
                 </div>
                 <div className="ml-4 text-right">
                   <p className={`text-lg font-bold ${
-                    mov.tipo === 'DEUDA'
-                      ? 'text-red-600 dark:text-red-400'
-                      : mov.tipo === 'CREDITO'
-                      ? 'text-green-600 dark:text-green-400'
-                      : mov.tipo === 'PAGO'
-                      ? 'text-blue-600 dark:text-blue-400'
+                    mov.tipo === 'DEUDA' ? 'text-red-600 dark:text-red-400'
+                      : mov.tipo === 'CREDITO' ? 'text-green-600 dark:text-green-400'
+                      : mov.tipo === 'PAGO' ? 'text-blue-600 dark:text-blue-400'
                       : 'text-gray-600 dark:text-gray-400'
                   }`}>
                     {mov.tipo === 'DEUDA' || mov.tipo === 'CREDITO' ? '+' : '-'}${mov.monto.toFixed(2)}

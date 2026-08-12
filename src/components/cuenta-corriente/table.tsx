@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { abrirCuentaCorrienteDirecto } from '@/lib/actions-cuenta-corriente';
 import { useRouter } from 'next/navigation';
+import { CuentasCorrientesDB, SociosDB } from '@/lib/db';
 
 type Socio = {
   id: string;
@@ -22,12 +22,28 @@ export default function CuentaCorrienteTable({ socios }: { socios: Socio[] }) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
 
-  const handleAbrirCuenta = async (socioId: string, nombreCompleto: string) => {
+  const handleAbrirCuenta = (socioId: string, nombreCompleto: string) => {
     if (!confirm(`¿Abrir cuenta corriente para ${nombreCompleto}?`)) return;
 
     setLoading(socioId);
     try {
-      await abrirCuentaCorrienteDirecto(socioId, 'Apertura de cuenta');
+      const socio = SociosDB.findUnique({ id: socioId });
+      if (!socio) {
+        alert('El socio no existe.');
+        return;
+      }
+      const existente = CuentasCorrientesDB.findUnique({ socioId });
+      if (existente) {
+        alert('El socio ya tiene una cuenta corriente.');
+        return;
+      }
+      CuentasCorrientesDB.create({
+        socioId,
+        descripcion: 'Apertura de cuenta',
+        saldoDeuda: 0,
+        saldoCredito: 0,
+        estado: 'ACTIVO',
+      });
       router.refresh();
     } catch (error: any) {
       alert(error.message || 'Error al abrir cuenta corriente');
@@ -44,7 +60,6 @@ export default function CuentaCorrienteTable({ socios }: { socios: Socio[] }) {
     <div className="mt-6 flow-root">
       <div className="inline-block min-w-full align-middle">
         <div className="rounded-lg bg-gray-50 dark:bg-gray-800 p-2 md:pt-0">
-          {/* Vista Desktop */}
           <table className="hidden min-w-full text-gray-900 dark:text-white md:table">
             <thead className="rounded-lg text-left text-sm font-normal">
               <tr>
@@ -54,9 +69,7 @@ export default function CuentaCorrienteTable({ socios }: { socios: Socio[] }) {
                 <th scope="col" className="px-3 py-5 font-medium text-right">Deuda</th>
                 <th scope="col" className="px-3 py-5 font-medium text-right">Crédito</th>
                 <th scope="col" className="px-3 py-5 font-medium text-right">Saldo Neto</th>
-                <th scope="col" className="relative py-3 pl-6 pr-3">
-                  <span className="sr-only">Acciones</span>
-                </th>
+                <th scope="col" className="relative py-3 pl-6 pr-3"><span className="sr-only">Acciones</span></th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-700">
@@ -142,7 +155,6 @@ export default function CuentaCorrienteTable({ socios }: { socios: Socio[] }) {
             </tbody>
           </table>
 
-          {/* Vista Mobile */}
           <div className="md:hidden">
             {socios.map((socio) => {
               const tieneCuenta = socio.cuentaCorriente !== null;
@@ -151,10 +163,7 @@ export default function CuentaCorrienteTable({ socios }: { socios: Socio[] }) {
                 : 0;
 
               return (
-                <div
-                  key={socio.id}
-                  className="mb-2 w-full rounded-md bg-white dark:bg-gray-700 p-4"
-                >
+                <div key={socio.id} className="mb-2 w-full rounded-md bg-white dark:bg-gray-700 p-4">
                   <div className="flex items-center justify-between border-b dark:border-gray-600 pb-4">
                     <div>
                       <p className="text-sm font-medium">{socio.apellido}, {socio.nombre}</p>
@@ -174,15 +183,11 @@ export default function CuentaCorrienteTable({ socios }: { socios: Socio[] }) {
                     <div className="flex justify-between pt-4 text-sm">
                       <div>
                         <p className="text-gray-500 dark:text-gray-400">Deuda</p>
-                        <p className="font-medium text-red-600 dark:text-red-400">
-                          ${socio.cuentaCorriente!.saldoDeuda.toFixed(2)}
-                        </p>
+                        <p className="font-medium text-red-600 dark:text-red-400">${socio.cuentaCorriente!.saldoDeuda.toFixed(2)}</p>
                       </div>
                       <div>
                         <p className="text-gray-500 dark:text-gray-400">Crédito</p>
-                        <p className="font-medium text-green-600 dark:text-green-400">
-                          ${socio.cuentaCorriente!.saldoCredito.toFixed(2)}
-                        </p>
+                        <p className="font-medium text-green-600 dark:text-green-400">${socio.cuentaCorriente!.saldoCredito.toFixed(2)}</p>
                       </div>
                       <div>
                         <p className="text-gray-500 dark:text-gray-400">Saldo Neto</p>
