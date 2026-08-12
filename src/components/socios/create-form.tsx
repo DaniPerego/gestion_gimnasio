@@ -1,33 +1,96 @@
 'use client';
 
 import Link from 'next/link';
-import { useActionState } from 'react';
-import { createSocio } from '@/lib/actions-socios';
-
-import { useRef } from 'react';
-
-type StateType = {
-  message: string;
-  errors: Record<string, string[]>;
-  values: Record<string, string>;
-};
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { SociosDB } from '@/lib/db';
 
 export default function Form() {
-  const initialState: StateType = { message: '', errors: {}, values: {} };
-  const [state, dispatch, isPending] = useActionState<StateType, FormData>(createSocio, initialState);
-  const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+  const [values, setValues] = useState<Record<string, string>>({});
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setValues(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsPending(true);
+    setError('');
+    setFieldErrors({});
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    // Validate required fields
+    const errors: Record<string, string[]> = {};
+    const nombre = formData.get('nombre') as string;
+    const apellido = formData.get('apellido') as string;
+    const dni = formData.get('dni') as string;
+    const contactoEmergencia = formData.get('contactoEmergencia') as string;
+    const condicionesMedicas = formData.get('condicionesMedicas') as string;
+
+    if (!nombre?.trim()) errors.nombre = ['El nombre es obligatorio'];
+    if (!apellido?.trim()) errors.apellido = ['El apellido es obligatorio'];
+    if (!dni?.trim()) errors.dni = ['El DNI es obligatorio'];
+    if (!contactoEmergencia?.trim()) errors.contactoEmergencia = ['El contacto de emergencia es obligatorio'];
+    if (!condicionesMedicas?.trim()) errors.condicionesMedicas = ['Las condiciones médicas son obligatorias'];
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setIsPending(false);
+      return;
+    }
+
+    // Check for duplicate DNI
+    const existing = SociosDB.findUnique({ dni: dni.trim() });
+    if (existing) {
+      setFieldErrors({ dni: ['Ya existe un socio con este DNI'] });
+      setIsPending(false);
+      return;
+    }
+
+    try {
+      SociosDB.create({
+        nombre: nombre.trim(),
+        apellido: apellido.trim(),
+        dni: dni.trim(),
+        email: (formData.get('email') as string)?.trim() || null,
+        telefono: (formData.get('telefono') as string)?.trim() || null,
+        fechaNacimiento: formData.get('fechaNacimiento') ? new Date(formData.get('fechaNacimiento') as string) : null,
+        genero: (formData.get('genero') as string) || null,
+        direccion: (formData.get('direccion') as string)?.trim() || null,
+        fotoUrl: null,
+        contactoEmergencia: contactoEmergencia?.trim() || null,
+        telefonoEmergencia: (formData.get('telefonoEmergencia') as string)?.trim() || null,
+        condicionesMedicas: condicionesMedicas?.trim() || null,
+        objetivo: (formData.get('objetivo') as string)?.trim() || null,
+        activo: true,
+        esLibre: false,
+      });
+
+      router.push('/admin/socios');
+    } catch {
+      setError('Error al crear el socio. Intente nuevamente.');
+    } finally {
+      setIsPending(false);
+    }
+  };
   
   return (
-    <form ref={formRef} action={dispatch}>
+    <form onSubmit={handleSubmit}>
       <div className="rounded-md bg-gray-50 dark:bg-gray-800 p-4 md:p-6">
         {/* Mostrar errores generales y de campos */}
-        {state.message && (
+        {(error || Object.keys(fieldErrors).length > 0) && (
           <div className="mb-4 p-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded">
-            {state.message}
-            {state.errors && (
+            {error}
+            {Object.keys(fieldErrors).length > 0 && (
               <ul className="mt-2 list-disc list-inside text-sm">
-                {Object.entries(state.errors).map(([field, errors]) =>
-                  errors.map((err: string) => <li key={field + err}>{field}: {err}</li>)
+                {Object.entries(fieldErrors).map(([field, errs]) =>
+                  errs.map((err: string) => <li key={field + err}>{field}: {err}</li>)
                 )}
               </ul>
             )}
@@ -47,13 +110,14 @@ export default function Form() {
               className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
               aria-describedby="nombre-error"
               autoComplete="given-name"
-              defaultValue={state.values?.nombre}
+              defaultValue={values.nombre}
+              onChange={handleChange}
               required
             />
           </div>
           <div id="nombre-error" aria-live="polite" aria-atomic="true">
-            {state.errors?.nombre &&
-              state.errors.nombre.map((error: string) => (
+            {fieldErrors.nombre &&
+              fieldErrors.nombre.map((error: string) => (
                 <p className="mt-2 text-sm text-red-500" key={error}>
                   {error}
                 </p>
@@ -75,13 +139,14 @@ export default function Form() {
               className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
               aria-describedby="apellido-error"
               autoComplete="family-name"
-              defaultValue={state.values?.apellido}
+              defaultValue={values.apellido}
+              onChange={handleChange}
               required
             />
           </div>
           <div id="apellido-error" aria-live="polite" aria-atomic="true">
-            {state.errors?.apellido &&
-              state.errors.apellido.map((error: string) => (
+            {fieldErrors.apellido &&
+              fieldErrors.apellido.map((error: string) => (
                 <p className="mt-2 text-sm text-red-500" key={error}>
                   {error}
                 </p>
@@ -103,13 +168,14 @@ export default function Form() {
               className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
               aria-describedby="dni-error"
               autoComplete="off"
-              defaultValue={state.values?.dni}
+              defaultValue={values.dni}
+              onChange={handleChange}
               required
             />
           </div>
           <div id="dni-error" aria-live="polite" aria-atomic="true">
-            {state.errors?.dni &&
-              state.errors.dni.map((error: string) => (
+            {fieldErrors.dni &&
+              fieldErrors.dni.map((error: string) => (
                 <p className="mt-2 text-sm text-red-500" key={error}>
                   {error}
                 </p>
@@ -128,7 +194,8 @@ export default function Form() {
               name="fechaNacimiento"
               type="date"
               autoComplete="bday"
-              defaultValue={state.values?.fechaNacimiento}
+              defaultValue={values.fechaNacimiento}
+              onChange={handleChange}
               className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
           </div>
@@ -144,7 +211,8 @@ export default function Form() {
               id="genero"
               name="genero"
               autoComplete="sex"
-              defaultValue={state.values?.genero}
+              defaultValue={values.genero}
+              onChange={handleChange}
               className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
             >
               <option value="">Seleccione...</option>
@@ -168,13 +236,14 @@ export default function Form() {
               placeholder="Ingrese el email"
               className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
               autoComplete="email"
-              defaultValue={state.values?.email}
+              defaultValue={values.email}
+              onChange={handleChange}
               aria-describedby="email-error"
             />
           </div>
           <div id="email-error" aria-live="polite" aria-atomic="true">
-            {state.errors?.email &&
-              state.errors.email.map((error: string) => (
+            {fieldErrors.email &&
+              fieldErrors.email.map((error: string) => (
                 <p className="mt-2 text-sm text-red-500" key={error}>
                   {error}
                 </p>
@@ -194,7 +263,8 @@ export default function Form() {
               type="text"
               placeholder="Ingrese el teléfono"
               autoComplete="tel"
-              defaultValue={state.values?.telefono}
+              defaultValue={values.telefono}
+              onChange={handleChange}
               className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
           </div>
@@ -212,7 +282,8 @@ export default function Form() {
               type="text"
               placeholder="Ingrese la dirección"
               autoComplete="street-address"
-              defaultValue={state.values?.direccion}
+              defaultValue={values.direccion}
+              onChange={handleChange}
               className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
           </div>
@@ -233,7 +304,8 @@ export default function Form() {
               type="text"
               placeholder="Nombre de familiar o amigo"
               autoComplete="off"
-              defaultValue={state.values?.contactoEmergencia}
+              defaultValue={values.contactoEmergencia}
+              onChange={handleChange}
               className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
               required
             />
@@ -252,7 +324,8 @@ export default function Form() {
               type="text"
               placeholder="Teléfono de emergencia"
               autoComplete="off"
-              defaultValue={state.values?.telefonoEmergencia}
+              defaultValue={values.telefonoEmergencia}
+              onChange={handleChange}
               className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
           </div>
@@ -271,7 +344,8 @@ export default function Form() {
               id="condicionesMedicas"
               name="condicionesMedicas"
               placeholder="Describa condiciones médicas relevantes..."
-              defaultValue={state.values?.condicionesMedicas}
+              defaultValue={values.condicionesMedicas}
+              onChange={handleChange}
               className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
               rows={3}
               required
@@ -290,7 +364,8 @@ export default function Form() {
               name="objetivo"
               type="text"
               placeholder="Ej: Bajar de peso, Ganar masa muscular..."
-              defaultValue={state.values?.objetivo}
+              defaultValue={values.objetivo}
+              onChange={handleChange}
               className="peer block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 text-sm outline-2 placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
           </div>
@@ -301,9 +376,9 @@ export default function Form() {
         {/* ...eliminado el checkbox de socio libre... */}
 
         <div aria-live="polite" aria-atomic="true">
-            {state.message && (
-                <p className="mt-2 text-sm text-red-500" key={state.message}>
-                    {state.message}
+            {error && (
+                <p className="mt-2 text-sm text-red-500" key={error}>
+                    {error}
                 </p>
             )}
         </div>
